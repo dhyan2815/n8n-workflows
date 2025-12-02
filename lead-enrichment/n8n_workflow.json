@@ -1,0 +1,1166 @@
+{
+  "name": "E2M Task",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        592
+      ],
+      "id": "fd7c643a-b369-4a68-b12b-08f0cc2ea917",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/datasets/sIK0Oc87wduX14FEx/items?format=json&clean=1&limit=5",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "apify_api_GqfU4nzu7KI9bjmwrJr7qHmrBP0ghm0fTMTe"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        224,
+        592
+      ],
+      "id": "a4e8a24b-f125-4083-8e81-863fb1fdb4ba",
+      "name": "HTTP Request - Apify"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nfor (const element of items) {\n  const record = element.json;\n\n  output.push({\n    json: {\n      timestamp: new Date().toISOString(),\n      company: record.title || record.name || record.companyName || '',\n      name: record.ownerName || record.contactName || '',\n      email: record.email || record.contactEmail || '',\n      website: record.website || record.url || record.websiteUrl || '',  // ✅ Added websiteUrl\n      domain: '',\n      city: record.city || record.addressObj?.city || record.address || '',\n      country: record.country || record.countryCode || '',\n      source: 'apify',\n      apify_raw: JSON.stringify(record),\n      status: 'imported',\n      notes: ''\n    }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        592
+      ],
+      "id": "5f2827be-38a7-4e3d-bd1e-61129a7ac473",
+      "name": "Normalize Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function to extract a clean domain from a URL using Regex\nfunction getDomain(url) {\n  // 1. Filter out invalid or Google placeholder URLs\n  if (!url || typeof url !== 'string' || url.includes('googleusercontent.com')) {\n    return '';\n  }\n\n  try {\n    // 2. Use a Regular Expression to find the domain part of the URL.\n    // This is more resilient than the URL() constructor.\n    const matches = url.match(/^https?:\\/\\/([^/?#]+)/);\n    let domain = matches ? matches[1] : null;\n\n    if (domain) {\n      // 3. Clean the domain by removing 'www.'\n      return domain.toLowerCase().replace(/^www\\./, '');\n    }\n    \n    // If the above regex fails (e.g., URL has no http), return empty.\n    return '';\n\n  } catch (e) {\n    console.log(`Failed to parse URL: ${url}, Error: ${e.message}`);\n    return '';\n  }\n}\n\n\n// --- Main code execution ---\nconst output = [];\nconst errors = [];\n\nfor (const element of items) {\n  const lead = element.json;\n  \n  // Find the website URL from the lead data\n  const website = lead.website || '';\n  \n  // Try to extract the domain using the new function\n  const domain = getDomain(website);\n\n  if (domain) {\n    // Success: add domain and update status\n    lead.domain = domain;\n    lead.status = 'domain_extracted';\n    output.push(lead);\n  } else {\n    // Failure: log the error\n    errors.push({\n      json: {\n        timestamp: new Date().toISOString(),\n        lead_row_or_id: lead.company || 'unknown',\n        error_message: 'Invalid or missing website URL (or Google Maps placeholder)',\n        website_value_received: website,\n        raw_payload: JSON.stringify(lead)\n      }\n    });\n  }\n}\n\n// Final output for the next nodes\nreturn [{ json: { leads: output, errors: errors } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        592
+      ],
+      "id": "8057bba9-f48c-499f-abca-1891583190c7",
+      "name": "Extract Domain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = items[0].json.leads || [];\nconst errors = items[0].json.errors || [];\n\nreturn [\n  { json: { type: 'leads', data: leads } },\n  { json: { type: 'errors', data: errors } }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        592
+      ],
+      "id": "1e057cda-3bac-4b8d-af22-33da0873f1fd",
+      "name": "Split Leads and Errors"
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = items[0].json.data || [];\nreturn leads.map(l => ({ json: l }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        496
+      ],
+      "id": "5dec8c74-ee04-412d-9834-26bb75852604",
+      "name": "Flatten Leads"
+    },
+    {
+      "parameters": {
+        "jsCode": "return (items[0].json.data || []).map(e => ({ json: e }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        688
+      ],
+      "id": "c97cee99-b4a7-4337-ac9a-223566fd0c4b",
+      "name": "Flatten Errors",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw",
+          "mode": "list",
+          "cachedResultName": "E2M_Leads_Workflow",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 602318241,
+          "mode": "list",
+          "cachedResultName": "Processed_Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit#gid=602318241"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "company": "={{ $json.company }}",
+            "name ": "={{ $json.name }}",
+            "email": "={{ $json.email }}",
+            "website ": "={{ $json.website }}",
+            "domain": "={{ $json.domain }}",
+            "city": "={{ $json.city }}",
+            "country": "={{ $json.country }}",
+            "source": "={{ $json.source }}",
+            "apify_raw": "={{ $json.apify_raw }}",
+            "status": "={{ $json.status }}",
+            "notes": "={{ $json.notes }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name ",
+              "displayName": "name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website ",
+              "displayName": "website ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apify_raw",
+              "displayName": "apify_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        496
+      ],
+      "id": "2a087d41-cb3a-47b9-9cbd-5475da999a66",
+      "name": "Processed_Leads",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ptl3wWwcj7WNkObN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw",
+          "mode": "list",
+          "cachedResultName": "E2M_Leads_Workflow",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 548946973,
+          "mode": "list",
+          "cachedResultName": "Error Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit#gid=548946973"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $('Split Condition').item.json.data[0].json.timestamp }}",
+            "lead_row_or_id": "={{ $('Split Condition').item.json.data[0].json.lead_row_or_id }}",
+            "error_message": "={{ $('Split Condition').item.json.data[0].json.error_message }}",
+            "raw_payload": "={{ $('Split Condition').item.json.data[0].json.raw_payload }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_row_or_id",
+              "displayName": "lead_row_or_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_payload",
+              "displayName": "raw_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        688
+      ],
+      "id": "7f6c5529-5753-4937-896e-3c1262b6f008",
+      "name": "Error Logs",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ptl3wWwcj7WNkObN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\n// Loop through all items from the scraper node\nfor (const item of items) {\n  const inputData = item.json;\n  let text_content = 'No text content found';\n  let source_url = '';\n\n  // CASE 1: SUCCESSFUL scrape (This is an OBJECT with a \"text\" key)\n  if (typeof inputData === 'object' && inputData !== null && !Array.isArray(inputData) && inputData.text) {\n    source_url = inputData.url || '';\n    \n    // THIS IS THE ONLY CLEANING WE NEED:\n    // It removes all newlines/tabs, then collapses all extra spaces.\n    text_content = inputData.text.replace(/(\\r\\n|\\n|\\r|\\t)/gm, \" \").replace(/\\s\\s+/g, ' ').trim().slice(0, 5000);\n  }\n  \n  // CASE 2: FAILED scrape (This is an OBJECT with an \"errorInfo\" or \"status\" key)\n  else if (typeof inputData === 'object' && inputData !== null && !Array.isArray(inputData) && (inputData.status || inputData.errorInfo)) {\n    text_content = 'Scrape failed or timed out: ' + (inputData.statusMessage || inputData.errorInfo || inputData.status);\n  }\n\n  // Pass the clean data to the next node\n  output.push({ json: { \n    source_url: source_url, \n    text_content: text_content \n  } }); \n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        568
+      ],
+      "id": "f86058ad-a1d9-40d9-95fc-74d838844083",
+      "name": "Extract Text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA_gY8jNmWEiA3TEYZsINu7gqMFb8DIHN0",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are an assistant that summarizes websites into short 2-sentence business summaries. Summarize this website content:\\n\\n{{ $json.text_content }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"maxOutputTokens\": 2000,\n    \"temperature\": 0.7\n  },\n  \"safetySettings\": [\n    { \"category\": \"HARM_CATEGORY_HARASSMENT\", \"threshold\": \"BLOCK_NONE\" },\n    { \"category\": \"HARM_CATEGORY_HATE_SPEECH\", \"threshold\": \"BLOCK_NONE\" },\n    { \"category\": \"HARM_CATEGORY_SEXUALLY_EXPLICIT\", \"threshold\": \"BLOCK_NONE\" },\n    { \"category\": \"HARM_CATEGORY_DANGEROUS_CONTENT\", \"threshold\": \"BLOCK_NONE\" }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2464,
+        568
+      ],
+      "id": "0c418e15-c735-47dd-b0c2-93ae872babfd",
+      "name": "Summarize Business",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=token",
+              "value": "apify_api_PPQKdpcvQqtYGafrBTUt9xcoduyHpn1wjAXZ"
+            },
+            {
+              "name": "timeout",
+              "value": "90"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"startUrls\": [{ \"url\": \"https://{{ $json.domain }}\" }],\n  \"useBrowser\": false,\n  \"pageFunction\": \"async function pageFunction(context) { const { $, request, log } = context; \\n\\n  /* THIS IS THE FIX */ \\n  $('script, style').remove(); \\n  /* END FIX */ \\n\\n  const text = $('body').text(); \\n  log.info('Page text extracted'); \\n  return { url: request.url, text: text, }; }\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2016,
+        568
+      ],
+      "id": "e3af9352-a822-4d34-b292-1d08d5d4bb62",
+      "name": "Scrape Website"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2912,
+        496
+      ],
+      "id": "ccdab466-8376-4614-ba4b-e09a2c24a1af",
+      "name": "Combine All Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\nfor (const lead of items) {\n  // We use \"ai_summary\" because that's the field we created\n  const { company, summary, city, country } = lead.json;\n\n  const prompt = `Write a short 4–5 sentence HTML outreach email to ${company}.\nThe email should:\n- sound professional and natural,\n- use the following business summary: \"${summary}\",\n- optionally reference their location (${city || ''} ${country || ''}),\n- include a CTA button saying 'Book a Call',\n- and return only clean HTML (no Markdown).`;\n\n  // This keeps all the data and adds the new \"prompt\" key\n  output.push({ json: { ...lead.json, prompt } });\n}\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3136,
+        400
+      ],
+      "id": "510c9a3b-7ca2-4ae4-973d-ad932753179d",
+      "name": "Build AI Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA_gY8jNmWEiA3TEYZsINu7gqMFb8DIHN0",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"{{ $json.prompt.replace(/\\n/g, '\\\\n').replace(/\"/g, '\\\\\"') }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"maxOutputTokens\": 2000,\n    \"temperature\": 0.7\n  },\n  \"safetySettings\": [\n    { \"category\": \"HARM_CATEGORY_HARASSMENT\", \"threshold\": \"BLOCK_NONE\" },\n    { \"category\": \"HARM_CATEGORY_HATE_SPEECH\", \"threshold\": \"BLOCK_NONE\" },\n    { \"category\": \"HARM_CATEGORY_SEXUALLY_EXPLICIT\", \"threshold\": \"BLOCK_NONE\" },\n    { \"category\": \"HARM_CATEGORY_DANGEROUS_CONTENT\", \"threshold\": \"BLOCK_NONE\" }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3360,
+        472
+      ],
+      "id": "b1a05dd2-737e-4f55-bb62-c1bb22b043cd",
+      "name": "Generate Email",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cb64c821-4913-42ee-b425-0443e7b19d2a",
+              "name": "ai_html_email",
+              "value": "={{ $json.candidates?.[0].content?.parts?.[0].text || 'No email generated' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3584,
+        472
+      ],
+      "id": "70c7d060-4db4-44f5-8b1a-5cd207f36a0f",
+      "name": "Extract Email HTML"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3808,
+        400
+      ],
+      "id": "54fe8ed9-30c4-423e-b26d-d3028cf5c80f",
+      "name": "Combine Email Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw",
+          "mode": "list",
+          "cachedResultName": "E2M_Leads_Workflow",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "company": "={{ $json.company }}",
+            "email": "={{ $json.email }}",
+            "domain": "={{ $json.domain }}",
+            "city": "={{ $json.city }}",
+            "country": "={{ $json.country }}",
+            "source": "={{ $json.source }}",
+            "apify_raw": "={{ $json.apify_raw }}",
+            "status": "={{ $json.status }}",
+            "notes": "={{ $json.notes }}",
+            "name": "={{ $json.name }}",
+            "website": "={{ $json.website }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apify_raw",
+              "displayName": "apify_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        592
+      ],
+      "id": "e1fc9753-204b-44ba-89f7-48107420d683",
+      "name": "Save Raw Leads",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ptl3wWwcj7WNkObN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw",
+          "mode": "list",
+          "cachedResultName": "E2M_Leads_Workflow",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1759453081,
+          "mode": "list",
+          "cachedResultName": "Summarized_Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit#gid=1759453081"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "company": "={{ $json.company }}",
+            "domain": "={{ $json.domain }}",
+            "summary": "={{ $json.ai_summary }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3136,
+        592
+      ],
+      "id": "361743db-1697-4318-947d-9223ad05060f",
+      "name": "Save_Summaries",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ptl3wWwcj7WNkObN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "08daed91-67d0-48fd-82f1-c5e46c505ed2",
+              "name": "ai_summary",
+              "value": "={{ $json.candidates?.[0].content?.parts?.[0].text || 'No summary generated' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2688,
+        568
+      ],
+      "id": "60e40f65-0b9a-40fc-b787-4e99a6d437d1",
+      "name": "Parse AI Summary"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw",
+          "mode": "list",
+          "cachedResultName": "E2M_Leads_Workflow",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 206425532,
+          "mode": "list",
+          "cachedResultName": "Outreached_Emails",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qGvFxhLLbzJ6FXi0LFR6gE2jJ_uUd7mRAW0AGHxB1Bw/edit#gid=206425532"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "company": "={{ $json.company }}",
+            "domain": "={{ $json.domain }}",
+            "summary": "={{ $json.summary }}",
+            "html_email": "={{ $json.ai_html_email }}"
+          },
+          "matchingColumns": [
+            "company"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "html_email",
+              "displayName": "html_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4032,
+        400
+      ],
+      "id": "60c585d6-ed62-4707-9b5e-ba231f2e02d1",
+      "name": "Save Emails",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ptl3wWwcj7WNkObN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c730fba0-864e-4b63-9a23-a6fb3a903837",
+              "leftValue": "={{$json[\"type\"]}}",
+              "rightValue": "leads",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        592
+      ],
+      "id": "73a8956d-f706-46d7-b997-b93d44e43244",
+      "name": "Split Condition"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Apify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Apify": {
+      "main": [
+        [
+          {
+            "node": "Normalize Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Items": {
+      "main": [
+        [
+          {
+            "node": "Save Raw Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Domain": {
+      "main": [
+        [
+          {
+            "node": "Split Leads and Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Leads and Errors": {
+      "main": [
+        [
+          {
+            "node": "Split Condition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Leads": {
+      "main": [
+        [
+          {
+            "node": "Processed_Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Errors": {
+      "main": [
+        [
+          {
+            "node": "Error Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processed_Leads": {
+      "main": [
+        [
+          {
+            "node": "Scrape Website",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Combine All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Summarize Business",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Business": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Website": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine All Data": {
+      "main": [
+        [
+          {
+            "node": "Save_Summaries",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Combine Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Email": {
+      "main": [
+        [
+          {
+            "node": "Extract Email HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email HTML": {
+      "main": [
+        [
+          {
+            "node": "Combine Email Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine Email Data": {
+      "main": [
+        [
+          {
+            "node": "Save Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Raw Leads": {
+      "main": [
+        [
+          {
+            "node": "Extract Domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save_Summaries": {
+      "main": [
+        []
+      ]
+    },
+    "Parse AI Summary": {
+      "main": [
+        [
+          {
+            "node": "Combine All Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Split Condition": {
+      "main": [
+        [
+          {
+            "node": "Flatten Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Flatten Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "50f9e6e6-6f26-411c-9962-3476c1c5105a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f96b36f44b126e74d44356601c3fa8fa3c8616a45a32cf22e4107793f5187dcf"
+  },
+  "id": "MFb2r1LQKLBmYtSF",
+  "tags": []
+}

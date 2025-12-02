@@ -1,0 +1,374 @@
+{
+  "name": "Chat with Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Get all input items from the Merge node\nconst allItems = $input.all();\n\n// --- STEP 1: Find the User's Question & Chat ID ---\nlet userQuestion = \"\";\nlet chatId = \"\";\n\n// Check if input is from Telegram (looks for json.message.text)\nconst telegramItem = allItems.find(item => item.json.message && item.json.message.text);\n\n// Check if input is from n8n Chat Trigger (looks for json.chatInput)\nconst n8nChatItem = allItems.find(item => item.json.chatInput);\n\nif (telegramItem) {\n  userQuestion = telegramItem.json.message.text;\n  chatId = telegramItem.json.message.chat.id; // Save the ID to reply later!\n} else if (n8nChatItem) {\n  userQuestion = n8nChatItem.json.chatInput;\n} else {\n  // Optional: Handle case where no question is found\n  // userQuestion = \"Hello\"; \n}\n\n// --- STEP 2: Process Sheet Data ---\n// Get sheet items (they have row_number field)\nconst sheetItems = allItems.filter(item => item.json.row_number !== undefined);\n\n// Convert to a readable text format for the AI\nlet formattedText = \"Google Sheet Data:\\n\\n\";\n\nif (sheetItems.length === 0) {\n  formattedText += \"The sheet is empty.\";\n} else {\n  // Get column headers from first sheet item\n  const firstItem = sheetItems[0].json;\n  const headers = Object.keys(firstItem).filter(key => key !== 'row_number');\n  \n  formattedText += \"Columns: \" + headers.join(\", \") + \"\\n\\n\";\n  \n  // Add each row (limit to 50 rows to avoid token limits)\n  const maxRows = Math.min(sheetItems.length, 50);\n  \n  for (let i = 0; i < maxRows; i++) {\n    const rowData = sheetItems[i].json;\n    formattedText += `Row ${rowData.row_number}:\\n`;\n    headers.forEach(header => {\n      const value = rowData[header] !== undefined ? rowData[header] : '';\n      formattedText += `  ${header}: ${value}\\n`;\n    });\n    formattedText += \"\\n\";\n  }\n}\n\n// --- STEP 3: Return Data for AI Agent ---\nreturn {\n  json: {\n    sheetData: formattedText,\n    rowCount: sheetItems.length,\n    userQuestion: userQuestion,\n    chatId: chatId // We pass this to the AI Agent so it can pass it to the final node\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        416
+      ],
+      "id": "39a4b5bc-51bc-4757-a50f-a8de81a0e411",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userQuestion }}",
+        "options": {
+          "systemMessage": "=You are an AI assistant that can handle general conversation AND analyze Google Sheet data when the user asks about it.\n\nHere is the sheet data provided (may be empty):\n{{ $json.sheetData }}\n\nYour behavior rules:\n- If the user asks a general or casual question (e.g., \"hello\", \"how are you\", \"what do you do\"), respond normally as a friendly assistant.\n- If the user asks about the sheet, analyze ONLY the given data accurately.\n- If the sheet is empty or does not contain information needed for the question, state that clearly.\n- When referring to specific entries in the sheet, use the row numbers shown in the formatted data.\n- Keep answers concise, factual, and direct. No fluff or storytelling."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1584,
+        384
+      ],
+      "id": "5be752c5-9dcf-42d1-8e1e-efffa7526b2f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        656
+      ],
+      "id": "5276d823-0519-4fb1-b8af-30795edbb459",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "n3nmFopVsF7hEuwV",
+          "name": "Gemini API Key"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        656
+      ],
+      "id": "a5e929a4-7e83-4a98-bc8c-c025d5e17883",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -208,
+        224
+      ],
+      "id": "4df013ac-124a-4ef8-a57b-1353bcdb20c9",
+      "name": "Chat Trigger",
+      "webhookId": "29ce4486-3d28-41c4-af25-4541404045a6"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "15aMMrbhWZE52uj5XmEGHYZQp2mvHMPNKlJWlojbgVSM",
+          "mode": "list",
+          "cachedResultName": "Booking MIS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15aMMrbhWZE52uj5XmEGHYZQp2mvHMPNKlJWlojbgVSM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 691313971,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15aMMrbhWZE52uj5XmEGHYZQp2mvHMPNKlJWlojbgVSM/edit#gid=691313971"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        368,
+        640
+      ],
+      "id": "ec4ade18-95f5-4b35-8916-e20323415ad2",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qxwtCbBrgnZdZm3q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d2d15f4b-9d07-460e-8e21-fc9d6cefbfd2",
+      "name": "Merge Chat and Sheet Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        736,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Triggers the workflow and provides the user's chatInput text.**\n",
+        "height": 256,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -288,
+        128
+      ],
+      "typeVersion": 1,
+      "id": "86284f88-cb3f-4ac6-a9c8-39284da939e6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "**Get Rows in Sheet**\nFetches rows A2:Z from Google Sheet.  \nOutput contains ~65 row items.  \nSent to Merge node (Input 1).  \nMust run before Code node to ensure sheetData is available.\n",
+        "height": 304,
+        "width": 288,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "e4744549-b783-496d-8612-584fd8dc7b12",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "**Merge Node (Mode: Append / Wait for both)**\nCombines:\n- Input 1 → Sheet rows  \n- Input 2 → Chat message  \n\nEnsures both datasets arrive cleanly as separate input arrays.  \nPrevents race conditions and guarantees Code node gets:\n$input.first() → Sheet data  \n$input.all(1) → Chat input\n",
+        "height": 464,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        624,
+        112
+      ],
+      "typeVersion": 1,
+      "id": "1e2de217-2e75-4567-a904-9a514c57a521",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "**Code Node**\nParses two inputs:\n\nInput 1 → Sheet rows  \nInput 2 → Chat message\n\nBuilds:\n- sheetData (formatted text)\n- rowCount\n- userQuestion\n\nReturns a single clean JSON object for the AI Agent.\nNo mixing of data across inputs.\n",
+        "height": 464,
+        "width": 320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "18b648dc-fdcc-4f15-87ff-58f7d77c03f6",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Uses:\n- `userQuestion` as the prompt\n- `sheetData` inside system message\n\nHandles:\n- General conversation\n- Data analysis from the sheet\n\nRelies on Code node’s structured output.\n",
+        "height": 384,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1536,
+        144
+      ],
+      "typeVersion": 1,
+      "id": "134ff5c9-2c5a-4b91-be88-61704ed78c6e",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nLLM used by the AI Agent.  \nReceives processed prompt + system message.  \nNo direct access to sheet or chat inputs.\n",
+        "height": 288,
+        "width": 272,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1328,
+        608
+      ],
+      "typeVersion": 1,
+      "id": "c049f787-aa8b-44fd-8dbd-53796e604b34",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nStores conversation history for the AI Agent.  \nHelps maintain context across multiple messages.\n",
+        "height": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1632,
+        608
+      ],
+      "typeVersion": 1,
+      "id": "9a906d1b-fbee-4fe5-8d76-d00dea862286",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        480
+      ],
+      "id": "30ce4868-674f-48e5-9feb-ab16d35b1b86",
+      "name": "Telegram Trigger",
+      "webhookId": "f2608341-0ea9-4839-8c48-b8153adcc01e",
+      "credentials": {
+        "telegramApi": {
+          "id": "aaYi2GOtaDsWOnuG",
+          "name": "Sheetify Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2032,
+        384
+      ],
+      "id": "f80e95dd-4416-48a0-979c-b2832accc66d",
+      "name": "Telegram Send Message",
+      "webhookId": "f04aa4fd-e5e9-43ce-8923-0842a4436186",
+      "credentials": {
+        "telegramApi": {
+          "id": "atOCU0xPK4ke2evd",
+          "name": "Telegram Opus Account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge Chat and Sheet Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Chat and Sheet Data": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge Chat and Sheet Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1e3e5b82-f068-4b2b-9cc7-890a35cf0486",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "177902cd251f8460066393a071d58a02cea52a98604edf0fbf940e6749cab1fa"
+  },
+  "id": "rkRoUMZJWzqC93bG",
+  "tags": []
+}

@@ -1,0 +1,303 @@
+{
+  "name": "Daily AI Briefing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": "={{ 11 }}",
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        5504,
+        480
+      ],
+      "id": "fe8b366a-8d1d-46fd-95ec-0e9ec4e1f987",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4af8c835-241f-4fa9-b397-147b5b7ca333",
+              "name": "topic",
+              "value": "Artificial Intelligence News",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5728,
+        480
+      ],
+      "id": "d9a319e6-d1ec-4adb-ad05-9f3bdc6ec271",
+      "name": "Set"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $node[\"Set\"].json[\"topic\"] }}"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "pageSize",
+              "value": "10"
+            },
+            {
+              "name": "from",
+              "value": "={{ new Date(Date.now() - 24*60*60*1000).toISOString().split('T')[0] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        5952,
+        480
+      ],
+      "id": "3101f629-a6d3-4c96-8013-d29073ff0e6d",
+      "name": "Fetch AI News",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "kd3PG7SDK5vRzwSq",
+          "name": "NewsAPI.org Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "articles",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        6176,
+        480
+      ],
+      "id": "bb735e2c-cded-40b6-ba10-f05b976e811a",
+      "name": "Split Articles"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        6696,
+        704
+      ],
+      "id": "3ffd8801-ecde-4881-a756-5eb278937c62",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "n3nmFopVsF7hEuwV",
+          "name": "Gemini API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert AI newsletter writer. Here are the 10 most recent articles about AI from the last 24 hours:\n\n{{$json.chatInput}}\n\nWrite a concise, engaging daily briefing (max 150 words) with:\n1. A catchy headline\n2. 4–6 bullet points of the most important developments\n3. One short \"One surprising thing\" section\n4. Tone: professional but fun\n\nOnly output clean markdown, no extra commentary"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        6624,
+        480
+      ],
+      "id": "35a805e8-5c25-4704-9032-88b651e3a749",
+      "name": "Summarize with LLM"
+    },
+    {
+      "parameters": {
+        "sendTo": "dhyan2815@gmail.com",
+        "subject": "=📰 Your Daily AI Briefing – {{ new Date().toISOString().split('T')[0] }}",
+        "message": "={{ $('Convert Markdown to HTML').first().json.data }}",
+        "options": {
+          "senderName": "From n8n by Dhyan Patel"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7200,
+        480
+      ],
+      "id": "6c51f551-91a4-4721-a683-ba9defddcc4c",
+      "name": "Send Gmail",
+      "webhookId": "d1855542-9b30-461f-8200-52049bd289d6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wNXX4DGrGL4xKzWu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  chatInput: items.map(item => \n    `Title: ${item.json.title}\\nDescription: ${item.json.description}\\nSource: ${item.json.source.name} – ${item.json.publishedAt}\\nLink: ${item.json.url}`\n  ).join('\\n\\n')\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6400,
+        480
+      ],
+      "id": "8fa01cb3-9317-4b58-95a2-19181300e592",
+      "name": "Single Input"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "c0eedb09-f1e6-41c2-8560-95c10ab5412e",
+      "name": "Convert Markdown to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        6976,
+        480
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Fetch AI News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch AI News": {
+      "main": [
+        [
+          {
+            "node": "Split Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize with LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Articles": {
+      "main": [
+        [
+          {
+            "node": "Single Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Single Input": {
+      "main": [
+        [
+          {
+            "node": "Summarize with LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize with LLM": {
+      "main": [
+        [
+          {
+            "node": "Convert Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6041db60-028e-44ea-91bf-1c7e0e757d27",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "177902cd251f8460066393a071d58a02cea52a98604edf0fbf940e6749cab1fa"
+  },
+  "id": "qWPvtE8gVsgDvrCr",
+  "tags": []
+}
