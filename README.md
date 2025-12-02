@@ -1,0 +1,140 @@
+# ⚙️ Automation Workflows – n8n Collection
+
+This repository contains a curated collection of **production-ready AI automation workflows** built using **n8n**, **Gemini**, **Google APIs**, **Pinecone**, and other modern tooling.  
+Each workflow lives in its own sub-folder with a dedicated README, architecture diagram, and the exported n8n `.json` file.
+
+The goal of this repository is simple:  
+**Modular, reusable, real-world AI systems — ready for deployment.**
+
+---
+
+## 📁 Repository Structure
+
+```
+/
+├── Daily-AI-Briefing/
+│   ├── README.md
+│   ├── workflow.json
+│   └── assets/
+│
+├── RAG-Chatbot/
+│   ├── README.md
+│   ├── workflow.json
+│   └── assets/
+│
+└── Talk-with-Sheets/
+    ├── README.md
+    ├── workflow.json
+    └── assets/
+```
+
+Each folder includes:
+- the workflow export (`workflow.json`)
+- a dedicated README with architecture details  
+- optional diagrams under `/assets`
+
+---
+
+## 🚀 Workflows Included
+
+### **1. 📰 Daily AI Briefing**
+Automates a full AI-powered news briefing pipeline:
+- Fetches latest AI news via NewsAPI  
+- Summarizes using **Google Gemini**  
+- Converts markdown → HTML  
+- Sends automated daily emails via Gmail  
+
+Useful for:
+- AI news reporting  
+- Daily brief generation  
+- Automated content summarization  
+
+
+---
+
+### **2. 📚 RAG Chatbot – Internal Document QA**
+A full Retrieval-Augmented Generation (RAG) system using:
+- Google Drive document ingestion  
+- Recursive text splitting  
+- Gemini embeddings  
+- Pinecone vector store (index + retrieval)  
+- LangChain Agent with retrieval tool  
+- Conversational memory  
+
+Useful for:
+- Internal knowledge assistants  
+- Company documentation chatbot  
+- Enterprise search systems  
+
+
+---
+
+### **3. 📊 Talk with Google Sheets**
+A hybrid chatbot capable of:
+- General conversation  
+- On-the-fly Google Sheets data analysis  
+- Telegram + n8n Chat integration  
+- Sheet row formatting + structured analysis  
+- AI Agent using Gemini with strict reasoning rules  
+
+Useful for:
+- Spreadsheet analytics via chat  
+- Team dashboards  
+- Chat-driven reporting and lookup  
+
+
+---
+
+## 🧠 Tech Stack
+
+| Category | Tools |
+|---------|--------|
+| Workflow Automation | n8n |
+| LLM / Summarization / QA | Google Gemini |
+| Vector Database (RAG) | Pinecone |
+| File Storage | Google Drive |
+| Spreadsheet Ops | Google Sheets |
+| Messaging | Telegram + n8n Chat |
+| Logic | JavaScript (n8n Code nodes) |
+
+---
+
+## 🎯 Purpose
+
+This repository is meant to serve as:
+- A **portfolio** of real AI automation systems  
+- A **reference library** for workflows and patterns  
+- A **plug-and-play collection** for building complex AI agents and pipelines  
+- A **learning resource** for anyone working with n8n + AI  
+
+Each workflow is intentionally **modular**, **maintainable**, and **self-contained**.
+
+---
+
+## 🔧 Setup Requirements
+
+Before using any workflow, ensure you have:
+
+- n8n Cloud account **or** self-hosted instance  
+- Google API credentials (Sheets, Drive, Gmail depending on workflow)  
+- Gemini API key  
+- Pinecone account (for RAG workflows)  
+- Telegram Bot token (for chat-based workflows)
+
+Each workflow’s README contains step-by-step setup instructions.
+
+---
+
+## 👤 Author
+
+**Dhyan Patel**  
+AI/ML Engineering • Automation Systems • Workflow Design  
+🔗 [LinkedIn](https://linkedin.com/in/dhyan2815) 🔗 [GitHub](https://github.com/dhyan2815)
+
+---
+
+## ⭐ Feedback & Contributions
+
+Feel free to open issues, suggest improvements, or request new automation workflows.  
+This repository will continue expanding with more AI-driven systems.
+
