@@ -35,6 +35,8 @@ No hidden integrations.
 
 ## 🏗️ Workflow Architecture
 
+<img src="./assets/workflow.png" alt="AI Workflow Architecture" width="700"/>
+
 ### High-Level Flow
 
 1. **Telegram Trigger**  
