@@ -1,0 +1,377 @@
+{
+  "name": "Chat with Sheets via Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Get all input items from the Merge node\nconst allItems = $input.all();\n\n// --- STEP 1: Find the User's Question & Chat ID ---\nlet userQuestion = \"\";\nlet chatId = \"\";\n\n// Check if input is from Telegram (looks for json.message.text)\nconst telegramItem = allItems.find(item => item.json.message && item.json.message.text);\n\n// Check if input is from n8n Chat Trigger (looks for json.chatInput)\nconst n8nChatItem = allItems.find(item => item.json.chatInput);\n\nif (telegramItem) {\n  userQuestion = telegramItem.json.message.text;\n  chatId = telegramItem.json.message.chat.id; // Save the ID to reply later!\n} else if (n8nChatItem) {\n  userQuestion = n8nChatItem.json.chatInput;\n} else {\n  // Optional: Handle case where no question is found\n  // userQuestion = \"Hello\"; \n}\n\n// --- STEP 2: Process Sheet Data ---\n// Get sheet items (they have row_number field)\nconst sheetItems = allItems.filter(item => item.json.row_number !== undefined);\n\n// Convert to a readable text format for the AI\nlet formattedText = \"Google Sheet Data:\\n\\n\";\n\nif (sheetItems.length === 0) {\n  formattedText += \"The sheet is empty.\";\n} else {\n  // Get column headers from first sheet item\n  const firstItem = sheetItems[0].json;\n  const headers = Object.keys(firstItem).filter(key => key !== 'row_number');\n  \n  formattedText += \"Columns: \" + headers.join(\", \") + \"\\n\\n\";\n  \n  // Add each row (limit to 50 rows to avoid token limits)\n  const maxRows = Math.min(sheetItems.length, 50);\n  \n  for (let i = 0; i < maxRows; i++) {\n    const rowData = sheetItems[i].json;\n    formattedText += `Row ${rowData.row_number}:\\n`;\n    headers.forEach(header => {\n      const value = rowData[header] !== undefined ? rowData[header] : '';\n      formattedText += `  ${header}: ${value}\\n`;\n    });\n    formattedText += \"\\n\";\n  }\n}\n\n// --- STEP 3: Return Data for AI Agent ---\nreturn {\n  json: {\n    sheetData: formattedText,\n    rowCount: sheetItems.length,\n    userQuestion: userQuestion,\n    chatId: chatId // We pass this to the AI Agent so it can pass it to the final node\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        320
+      ],
+      "id": "312d6cb3-7637-4ff6-87d2-778c776d9331",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userQuestion }}",
+        "options": {
+          "systemMessage": "=You are an AI assistant that can handle general conversation AND analyze Google Sheet data when the user asks about it.\n\nHere is the sheet data provided (may be empty):\n{{ $json.sheetData }}\n\nYour behavior rules:\n- If the user asks a general or casual question (e.g., \"hello\", \"how are you\", \"what do you do\"), respond normally as a friendly assistant.\n- If the user asks about the sheet, analyze ONLY the given data accurately.\n- If the sheet is empty or does not contain information needed for the question, state that clearly.\n- When referring to specific entries in the sheet, use the row numbers shown in the formatted data.\n- Keep answers concise, factual, and direct. No fluff or storytelling."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        544,
+        288
+      ],
+      "id": "7f161be1-0437-4e4b-b445-e39e1b8535ed",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        384,
+        560
+      ],
+      "id": "3d6ba60b-b902-4adf-8bd5-73f045cd26de",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OdSNwRoe8jgZgtRT",
+          "name": "Gemini API dhyan.work-n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "15aMMrbhWZE52uj5XmEGHYZQp2mvHMPNKlJWlojbgVSM",
+          "mode": "list",
+          "cachedResultName": "Booking MIS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15aMMrbhWZE52uj5XmEGHYZQp2mvHMPNKlJWlojbgVSM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 691313971,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15aMMrbhWZE52uj5XmEGHYZQp2mvHMPNKlJWlojbgVSM/edit#gid=691313971"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -672,
+        544
+      ],
+      "id": "dc434e9f-847c-48f6-b279-e92ec7834f8e",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "H02oejS8CCpME5R4",
+          "name": "Sheets dhyan.work-n8n"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "eb75d9b1-9c9e-4efb-a3f2-f735a79b7459",
+      "name": "Merge Chat and Sheet Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -304,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Triggers the workflow and provides the user's chatInput text.**\n",
+        "height": 256,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1216,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "9495984a-b31d-455d-9122-6a7c5a48d7b5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "**Get Rows in Sheet**\nFetches rows A2:Z from Google Sheet.  \nOutput contains ~65 row items.  \nSent to Merge node (Input 1).  \nMust run before Code node to ensure sheetData is available.\n",
+        "height": 304,
+        "width": 288,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -768,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "c85e1d83-9172-4859-8a8b-8643133d33ec",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "**Merge Node (Mode: Append / Wait for both)**\nCombines:\n- Input 1 → Sheet rows  \n- Input 2 → Chat message  \n\nEnsures both datasets arrive cleanly as separate input arrays.  \nPrevents race conditions and guarantees Code node gets:\n$input.first() → Sheet data  \n$input.all(1) → Chat input\n",
+        "height": 464,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "0f1e3888-a2f0-4953-b401-2cec7fbe8b2b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "**Code Node**\nParses two inputs:\n\nInput 1 → Sheet rows  \nInput 2 → Chat message\n\nBuilds:\n- sheetData (formatted text)\n- rowCount\n- userQuestion\n\nReturns a single clean JSON object for the AI Agent.\nNo mixing of data across inputs.\n",
+        "height": 464,
+        "width": 320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "3d1e85d0-78d7-4be6-938e-00ef6bf33ca6",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Uses:\n- `userQuestion` as the prompt\n- `sheetData` inside system message\n\nHandles:\n- General conversation\n- Data analysis from the sheet\n\nRelies on Code node’s structured output.\n",
+        "height": 384,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        496,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "298260d9-49c4-4cc4-b83e-1e19d71ba0c2",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nLLM used by the AI Agent.  \nReceives processed prompt + system message.  \nNo direct access to sheet or chat inputs.\n",
+        "height": 288,
+        "width": 272,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        288,
+        512
+      ],
+      "typeVersion": 1,
+      "id": "f712d249-5e53-499e-b094-2f17ccd6cb4f",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1120,
+        240
+      ],
+      "id": "f26a019c-2c29-4332-a960-5d720d2871bb",
+      "name": "Telegram Trigger",
+      "webhookId": "f2608341-0ea9-4839-8c48-b8153adcc01e",
+      "credentials": {
+        "telegramApi": {
+          "id": "pLLnG1vbFRPHEHpg",
+          "name": "Sheetify Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Code in JavaScript').item.json.chatId }}",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        288
+      ],
+      "id": "032e559d-7ca9-4dba-b509-f0e3c4cefcae",
+      "name": "Send Message",
+      "webhookId": "88dc85f1-7539-4e64-8a6b-905ef7374551",
+      "credentials": {
+        "telegramApi": {
+          "id": "pLLnG1vbFRPHEHpg",
+          "name": "Sheetify Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "**Reflects the output of AI Agent into the Telegram back again.**\n",
+        "height": 256,
+        "width": 288,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "bf7a680b-7c90-4bbd-b371-a04862926b2c",
+      "name": "Sticky Note6"
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 665983027,
+          "message": {
+            "message_id": 38,
+            "from": {
+              "id": 5122049063,
+              "is_bot": false,
+              "first_name": "Dhyan",
+              "last_name": "Patel",
+              "username": "dhyan2815",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 5122049063,
+              "first_name": "Dhyan",
+              "last_name": "Patel",
+              "username": "dhyan2815",
+              "type": "private"
+            },
+            "date": 1765594612,
+            "text": "what does the sheet do?"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge Chat and Sheet Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Chat and Sheet Data": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge Chat and Sheet Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e1aac768-b062-4c3b-809d-a187c7a2219e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b5ce0487ff22495b0ec8ec7fcd455cb1e7a71ee741d4c100ace6f1c74d140697"
+  },
+  "id": "UDIUVG1CnUn2zOdw",
+  "tags": [
+    {
+      "updatedAt": "2025-12-12T16:40:46.636Z",
+      "createdAt": "2025-12-12T16:40:46.636Z",
+      "id": "ayiq9SRoLLRyRSFU",
+      "name": "Production"
+    }
+  ]
+}
