@@ -30,6 +30,11 @@ The goal of this repository is simple:
     ├── README.md
     ├── workflow.json
     └── assets/
+
+    Rag-on-Slack/
+    ├── README.md
+    ├── workflow.json
+    └── assets/
 ```
 
 Each folder includes:
@@ -117,6 +122,43 @@ A Telegram-based conversational interface for Google Sheets analytics:
 - Quick analytics without opening sheets
 - Conversational data exploration
 
+### **5. Chat with Document on Slack (RAG)**
+
+A Slack-native conversational system for document-based question answering:
+- Accepts PDF uploads directly within a Slack channel  
+- Automatically extracts, cleans, and chunks document content  
+- Generates and stores semantic embeddings in Pinecone  
+- Answers user questions using Retrieval-Augmented Generation (RAG)  
+- Distinguishes between document ingestion and question messages  
+- Context-only responses – answers strictly grounded in uploaded documents  
+- Read-only interaction – does not modify source documents  
+
+**Workflow Architecture:**
+1. Slack Trigger → receives channel messages and file uploads  
+2. Conditional Routing (IF / Switch) → separates ingestion vs Q&A flow  
+3. File Download & PDF Extraction → converts documents into raw text  
+4. Text Cleaning & Chunking → prepares data for embedding  
+5. Gemini Embeddings → generates vector representations  
+6. Pinecone Vector Store → persists document embeddings  
+7. Query Embedding → converts user question into semantic vector  
+8. Vector Store Retriever → fetches top-K relevant document chunks  
+9. Retrieval Q&A Chain → injects context and generates grounded answers  
+10. Slack Send Message → replies to the user in the channel  
+
+**Key Constraints:**
+- Single Slack Request URL (Slack-compliant architecture)  
+- Answers generated strictly from retrieved document context  
+- Bot messages ignored to prevent infinite response loops  
+- Ingestion triggered only by file upload events  
+- No hallucination or assumptions outside document scope  
+
+**Useful for:**
+- Asking questions on PDFs directly inside Slack  
+- Team-wide document understanding and knowledge sharing  
+- Exam papers, policies, manuals, and reports  
+- Zero-friction document Q&A without leaving Slack  
+
+
 ---
 
 ## 🧠 Tech Stack
@@ -163,13 +205,13 @@ Each workflow's README contains step-by-step setup instructions.
 
 ## 📋 Workflow Comparison
 
-| Feature | Daily Briefing | RAG Chatbot | Talk with Sheets | Chat with Sheets (Telegram) |
-|---------|---------------|-------------|------------------|----------------------------|
-| **Interface** | Email | n8n Chat | Telegram/n8n Chat | Telegram Only |
-| **Data Source** | NewsAPI | Google Drive | Google Sheets | Google Sheets |
-| **LLM** | Gemini | Gemini | Gemini | Gemini |
-| **Read/Write** | Read Only | Read Only | Read Only | Read Only |
-| **Automation** | Scheduled | On-Demand | On-Demand | On-Demand |
+| Feature | Daily Briefing | RAG Chatbot | Talk with Sheets | Chat with Sheets (Telegram) | Chat with Doc on Slack |
+|---------|---------------|-------------|------------------|----------------------------|-------|
+| **Interface** | Email | n8n Chat | Telegram/n8n Chat | Telegram Only | Slack |
+| **Data Source** | NewsAPI | Google Drive | Google Sheets | Google Sheets | File |
+| **LLM** | Gemini | Gemini | Gemini | Gemini | Gemini |
+| **Read/Write** | Read Only | Read Only | Read Only | Read Only | Read Only |
+| **Automation** | Scheduled | On-Demand | On-Demand | On-Demand | On-Demand |
 
 ---
 
