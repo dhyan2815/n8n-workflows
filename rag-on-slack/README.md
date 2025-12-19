@@ -20,6 +20,8 @@ No manual indexing. No copy-paste. No hallucinations.
 
 ## 🧠 Architecture Overview
 
+<img src="./assets/workflow.png" alt="AI Workflow Architecture" width="700"/>
+
 The workflow is divided into **two clearly separated phases**, both handled by a **single Slack Event Subscription URL**.
 
 ### Phase 1 — Document Ingestion & Indexing
