@@ -6,8 +6,7 @@
         "rule": {
           "interval": [
             {
-              "triggerAtHour": "={{ 11 }}",
-              "triggerAtMinute": 30
+              "triggerAtHour": "={{ 7 }}"
             }
           ]
         }
@@ -15,10 +14,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        5504,
-        480
+        80,
+        160
       ],
-      "id": "fe8b366a-8d1d-46fd-95ec-0e9ec4e1f987",
+      "id": "32ea554a-e3a8-4b55-9c01-346d28735ba6",
       "name": "Schedule Trigger"
     },
     {
@@ -38,10 +37,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        5728,
-        480
+        304,
+        160
       ],
-      "id": "d9a319e6-d1ec-4adb-ad05-9f3bdc6ec271",
+      "id": "a27c668d-aba4-41db-8b86-d4482441c0d9",
       "name": "Set"
     },
     {
@@ -79,15 +78,15 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        5952,
-        480
+        528,
+        160
       ],
-      "id": "3101f629-a6d3-4c96-8013-d29073ff0e6d",
+      "id": "e10a6b01-33e4-41aa-9ded-d6ec1e43175b",
       "name": "Fetch AI News",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "kd3PG7SDK5vRzwSq",
-          "name": "NewsAPI.org Auth"
+          "id": "scTfZ7cYItIL7VS3",
+          "name": "NewsAPI"
         }
       }
     },
@@ -99,10 +98,10 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        6176,
-        480
+        752,
+        160
       ],
-      "id": "bb735e2c-cded-40b6-ba10-f05b976e811a",
+      "id": "5f354d4f-b003-4ddf-a0a8-486a46ba1c11",
       "name": "Split Articles"
     },
     {
@@ -112,17 +111,194 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        6696,
-        704
+        1280,
+        384
       ],
-      "id": "3ffd8801-ecde-4881-a756-5eb278937c62",
+      "id": "d96b3e76-c92c-4ce5-82a6-474ad791205c",
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
-          "id": "n3nmFopVsF7hEuwV",
-          "name": "Gemini API Key"
+          "id": "7gDOFzfenoAXxvSc",
+          "name": "proj:workflow-A dhyan.work-n8n 1st"
         }
       }
+    },
+    {
+      "parameters": {
+        "sendTo": "liomad999@gmail.com",
+        "subject": "=📰 Your Daily AI Briefing – {{ new Date().toISOString().split('T')[0] }}",
+        "message": "={{ $('Convert Markdown to HTML').first().json.data }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "From n8n by Dhyan Patel"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1808,
+        160
+      ],
+      "id": "6c13d6ed-1059-4c7f-8f4c-985b5f8fef62",
+      "name": "Send Gmail",
+      "webhookId": "d1855542-9b30-461f-8200-52049bd289d6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7D8cdgHxHwBIJZxi",
+          "name": "Nyxel9999 OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  chatInput: items.map(item => \n    `Title: ${item.json.title}\\nDescription: ${item.json.description}\\nSource: ${item.json.source.name} – ${item.json.publishedAt}\\nLink: ${item.json.url}`\n  ).join('\\n\\n')\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        160
+      ],
+      "id": "3064b551-7546-4281-8e7a-fa60150185f2",
+      "name": "Single Input"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "e9b12277-ac8d-4827-be4c-a910f9ac6c0d",
+      "name": "Convert Markdown to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Schedule Trigger**  \n\nAutomatically kicks off the workflow on a daily schedule (or manually)",
+        "height": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "47fa7297-5308-4064-abfe-448ea8468536",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "**Set (manual)**\n\nPrepares and injects custom variables/settings before the workflow runs",
+        "height": 320,
+        "width": 208,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        256,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "1180ffb4-9478-48e4-812f-b1c599f46baa",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "**Fetch AI News**\n\nCalls NewsAPI and grabs the latest AI-related articles",
+        "height": 320,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "489590fe-95a0-4c62-a03c-5b7405878972",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "**Split Articles**\n\nTakes the array of articles and turns each one into its own item",
+        "height": 320,
+        "width": 208,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        704,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "b2306a03-191f-41a1-985e-43ab26fe73d2",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "**Single Input**\n\nLimits processing to one article at a time (or selects a specific one)",
+        "height": 320,
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        912,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "55aabcbb-a11f-46da-8d9d-dc2301b35852",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "**Summarize with LLM**\n\nFeeds the article to Google Gemini and returns a clean summary",
+        "height": 320,
+        "width": 336,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "5d4bd473-9df4-4844-8812-3ac6e902ac08",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "**Convert Markdown → HTML**\n\nTurns the Gemini summary (Markdown) into proper rich HTML",
+        "height": 336,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1472,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "c15680b1-fde7-419a-923d-6332109ff8cd",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "**Send Gmail**\n\nSends the final formatted summary straight to your inbox",
+        "height": 320,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1728,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "5f1e4951-8b4f-4832-9316-2c658604ada7",
+      "name": "Sticky Note8"
     },
     {
       "parameters": {
@@ -138,67 +314,142 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        6624,
-        480
+        1200,
+        160
       ],
-      "id": "35a805e8-5c25-4704-9032-88b651e3a749",
+      "id": "d52b8bad-8b1d-459b-b995-7332c8bdee11",
       "name": "Summarize with LLM"
     },
     {
       "parameters": {
-        "sendTo": "dhyan2815@gmail.com",
-        "subject": "=📰 Your Daily AI Briefing – {{ new Date().toISOString().split('T')[0] }}",
-        "message": "={{ $('Convert Markdown to HTML').first().json.data }}",
-        "options": {
-          "senderName": "From n8n by Dhyan Patel"
-        }
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n**Large Language Model**\n\nProvides the AI language model (Google Gemini) that powers the summarization",
+        "height": 288,
+        "width": 304
       },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.stickyNote",
       "position": [
-        7200,
-        480
+        1168,
+        336
       ],
-      "id": "6c51f551-91a4-4721-a683-ba9defddcc4c",
-      "name": "Send Gmail",
-      "webhookId": "d1855542-9b30-461f-8200-52049bd289d6",
+      "typeVersion": 1,
+      "id": "f51a36ed-d281-481d-81c5-491addc38680",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Oli37hPbE1HhQyEnK7kBScAZS_iPYWjnCQc7pCzbxLY",
+          "mode": "list",
+          "cachedResultName": "Daily AI Briefings Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Oli37hPbE1HhQyEnK7kBScAZS_iPYWjnCQc7pCzbxLY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Oli37hPbE1HhQyEnK7kBScAZS_iPYWjnCQc7pCzbxLY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ \n  (() => {\n    const date = new Date($today);\n    const day = date.getDate();\n    const month = date.toLocaleString('en-US', { month: 'long' });\n    // Get ordinal suffix\n    const getOrdinal = n => {\n      const s=[\"th\",\"st\",\"nd\",\"rd\"], v=n%100;\n      return n+(s[(v-20)%10]||s[v]||s[0]);\n    };\n    return `${getOrdinal(day)} ${month}`;\n  })()\n}}",
+            "text": "={{ $('Convert Markdown to HTML').item.json.text }}",
+            "subject": "=📰 Your Daily AI Briefing – {{$today}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2064,
+        160
+      ],
+      "id": "3dd5c012-dd13-4676-88de-133b70f822ea",
+      "name": "Log News",
       "credentials": {
-        "gmailOAuth2": {
-          "id": "wNXX4DGrGL4xKzWu",
-          "name": "Gmail account"
+        "googleSheetsOAuth2Api": {
+          "id": "H02oejS8CCpME5R4",
+          "name": "Sheets dhyan.work-n8n"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  chatInput: items.map(item => \n    `Title: ${item.json.title}\\nDescription: ${item.json.description}\\nSource: ${item.json.source.name} – ${item.json.publishedAt}\\nLink: ${item.json.url}`\n  ).join('\\n\\n')\n}];"
+        "content": "**Google Sheets Node**\n\nLogs the news entries into a Google Sheet as a record.",
+        "height": 320,
+        "width": 256
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.stickyNote",
       "position": [
-        6400,
-        480
+        1984,
+        0
       ],
-      "id": "8fa01cb3-9317-4b58-95a2-19181300e592",
-      "name": "Single Input"
-    },
-    {
-      "parameters": {
-        "mode": "markdownToHtml",
-        "markdown": "={{ $json.text }}",
-        "options": {}
-      },
-      "id": "c0eedb09-f1e6-41c2-8560-95c10ab5412e",
-      "name": "Convert Markdown to HTML",
-      "type": "n8n-nodes-base.markdown",
       "typeVersion": 1,
-      "position": [
-        6976,
-        480
-      ]
+      "id": "acf7a0ec-c06d-4e65-8d36-eeeeae27faa9",
+      "name": "Sticky Note10"
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-12-17T07:00:16.007+05:30",
+          "Readable date": "December 17th 2025, 7:00:16 am",
+          "Readable time": "7:00:16 am",
+          "Day of week": "Wednesday",
+          "Year": "2025",
+          "Month": "December",
+          "Day of month": "17",
+          "Hour": "07",
+          "Minute": "00",
+          "Second": "16",
+          "Timezone": "Asia/Kolkata (UTC+05:30)"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
   "connections": {
     "Schedule Trigger": {
       "main": [
@@ -266,6 +517,17 @@
         ]
       ]
     },
+    "Convert Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Summarize with LLM": {
       "main": [
         [
@@ -277,11 +539,11 @@
         ]
       ]
     },
-    "Convert Markdown to HTML": {
+    "Send Gmail": {
       "main": [
         [
           {
-            "node": "Send Gmail",
+            "node": "Log News",
             "type": "main",
             "index": 0
           }
@@ -291,13 +553,24 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Kolkata",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "versionId": "6041db60-028e-44ea-91bf-1c7e0e757d27",
+  "versionId": "f615ea64-c091-43e3-a9da-2d21d6171edb",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "177902cd251f8460066393a071d58a02cea52a98604edf0fbf940e6749cab1fa"
+    "instanceId": "b5ce0487ff22495b0ec8ec7fcd455cb1e7a71ee741d4c100ace6f1c74d140697"
   },
-  "id": "qWPvtE8gVsgDvrCr",
-  "tags": []
+  "id": "bCs4wUnwyuIyvkFV",
+  "tags": [
+    {
+      "updatedAt": "2025-12-14T07:45:53.788Z",
+      "createdAt": "2025-12-14T07:45:53.788Z",
+      "id": "oBMEGD9OEmbOb6na",
+      "name": "Intermediate"
+    }
+  ]
 }
