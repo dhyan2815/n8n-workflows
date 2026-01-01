@@ -1,0 +1,1091 @@
+{
+  "name": "Social Media Publishing Agent by Dhyan Patel",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Social Media Content Generator by Niche\n\n- ## Generates post ideas from abstract intent (niche-level thinking).\n\n- ## Enriches ideas via research before structuring them.",
+        "height": 464,
+        "width": 1488
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        80
+      ],
+      "id": "6ccb1a36-8322-49ad-add5-f6c10cb35b30",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# Social Media Content Generator by Article URL\n\n- ## Extracts, cleans, and summarizes long-form content.\n\n- ## Converts dense source material into social-friendly hooks.",
+        "height": 480,
+        "width": 1488
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        560
+      ],
+      "id": "1ab15689-6584-4a59-b3cf-dabaa29c04f3",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Social Media Image Generation\n\n- ## Translates text insight into visual prompts.\n\n- ## Produces final image assets via generative models.",
+        "height": 1040,
+        "width": 1280,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2c7af07f-b561-44a6-a651-63a99b1264e4",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Social Media Publishing\n\n- ## Uploads media and captions to external platforms.\n\n- ## Executes irreversible side effects (posting live).",
+        "height": 1040,
+        "width": 720,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "4548130b-d555-4580-bf76-045f515dd2d7",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "20442c6e-3787-44f7-b2ed-b8b36366c817",
+              "name": "niche",
+              "value": "={{ $json.Idea }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1392,
+        336
+      ],
+      "id": "71349454-94a8-4254-89f1-c4447821c768",
+      "name": "Set Niche"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Content Type'] }}",
+                    "rightValue": "Niche",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a89dcd1f-7222-4152-9644-8eee013bea92"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Niche"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "548d3541-f7a5-4125-a318-8291b38a0b32",
+                    "leftValue": "={{ $json['Content Type'] }}",
+                    "rightValue": "URL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "URL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1680,
+        464
+      ],
+      "id": "8e7390e1-9287-4382-b01c-1727e5c27141",
+      "name": "Niche or URL?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Generate exactly 3 content ideas for the niche:\n{{ $json.niche }}\n"
+            },
+            {
+              "content": "=You are a social media strategist.\n\nSTRICT RULES:\n- Output ONLY valid JSON\n- No markdown\n- No emojis\n- No explanations\n- Always return the told ideas\n\nJSON FORMAT:\n\n{\n  \"ideas\": {\n    {\n      \"idea 1\": \"Here is the idea 1\",\n      \"idea 2\": \"Here is the idea 2\",\n    }\n  }\n}",
+              "role": "model"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        336
+      ],
+      "id": "ce07d7bb-6241-4877-ab0c-6500917567fe",
+      "name": "Generate Post Ideas",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7gDOFzfenoAXxvSc",
+          "name": "proj:workflow-A dhyan.work-n8n 1st"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ca488cfd-a656-4b5e-a116-fdbc21734d30",
+              "name": "target_url",
+              "value": "={{ $json.Idea }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1392,
+        656
+      ],
+      "id": "91c96282-6b5e-4b00-bc57-cf1db3fa4c43",
+      "name": "Extract URL"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <FIRECRAWL_TOKEN>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.target_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1136,
+        656
+      ],
+      "id": "84390480-0d50-4d8f-abc9-75ecc7725645",
+      "name": "Scrape Source URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Correct path based on your payload\nconst markdown = item.data?.markdown;\n\nif (!markdown || typeof markdown !== 'string') {\n\tthrow new Error('No markdown content found at item.data.markdown');\n}\n\n// Clean markdown → plain text\nconst cleanText = markdown\n\t.replace(/!\\[.*?\\]\\(.*?\\)/g, ' ')        // remove images\n\t.replace(/\\[([^\\]]+)\\]\\((.*?)\\)/g, '$1') // keep link text\n\t.replace(/[#>*_`~\\-]/g, ' ')              // markdown symbols\n\t.replace(/\\s+/g, ' ')\n\t.trim()\n\t.substring(0, 10000);\n\nreturn [\n\t{\n\t\tjson: {\n\t\t\tclean_text: cleanText\n\t\t}\n\t}\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        656
+      ],
+      "id": "008d719d-2cc0-44a7-a17b-0df92e765ad5",
+      "name": "Clean HTML"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        176
+      ],
+      "id": "5afe299b-0c83-4ffc-ab64-8b92cc7ec853",
+      "name": "Google Gemini Chat Model v1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FIk2UQYwnOg9QkYq",
+          "name": "proj:workflow-B dhyan.work-n8n 1st"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        848
+      ],
+      "id": "67ec40a7-977d-4426-8c95-a854b94164ce",
+      "name": "Google Gemini Chat Model v2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CxC1MXnwkYcAYMXV",
+          "name": "proj:workflow-B dhyan.work-n8n 2nd"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        848,
+        80
+      ],
+      "id": "3f297032-ccd0-4b9d-b414-e2765fb9d0dd",
+      "name": "Google Gemini Chat Model v3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5HM7b8UFzLbQx61C",
+          "name": "proj:workflow-A dhyan.work-n8n 2nd"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\"niche_summary\": \"your text here\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        176
+      ],
+      "id": "fcf01034-f62b-42fa-9760-3854cd04a34f",
+      "name": "Structured Output Parser v1"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\"post_title\": \"post title here\",\n\"article_summary\": \"summary here\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        848
+      ],
+      "id": "be7461b3-d776-43ea-a188-ade5dda82568",
+      "name": "Structured Output Parser v2"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"image_gen_prompt\" : \"prompt here\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1056,
+        96
+      ],
+      "id": "cba34459-3ec1-4845-99c8-6ee14044e7fa",
+      "name": "Structured Output Parser v3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <HF_ACCESS_TOKEN>"
+            },
+            {
+              "name": "Accept",
+              "value": "image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ $json.output.image_gen_prompt }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "Generated_Image"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        912,
+        320
+      ],
+      "id": "9f1c9554-9392-45c8-b9fd-85875ae978cd",
+      "name": "Image Generation",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Write a viral social media caption for the following:\n\n\n{{ $json.output.article_summary || $json.niche_summary[0] }}\n\nWrite ONE viral Social Media Post Title\nWrite ONE viral Social Media Caption.\nDo NOT include multiple options.\nDo NOT label sections.\nReturn ONLY the Post Title, Caption & 3 relevant hastags.\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        560,
+        752
+      ],
+      "id": "0db404c0-a73a-4d43-b4da-fac4dab6013c",
+      "name": "Content Writer",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CxC1MXnwkYcAYMXV",
+          "name": "proj:workflow-B dhyan.work-n8n 2nd"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "02128f75-2619-487e-8cf1-2b78365b877b",
+              "name": "post",
+              "value": "={{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        752
+      ],
+      "id": "131eb1a4-9f60-496d-8828-aa3040b5b7c0",
+      "name": "Keep Only Caption"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following article text:\n{{ $json.sliced_text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a content strategist, with an experience of 4+ years in content creation.\n\nTASK:\n1. Generate a concise, attention-grabbing headline suitable for a social media post.\n2. Write a clear, 2-sentence summary that captures the single most important insight for a general professional audience.\n\nOUTPUT RULES:\n- Be factual and specific\n- No emojis\n- No hashtags\n- No markdown\n- No commentary or explanations\n\nOUTPUT FORMAT (JSON ONLY):\n\n{\n  \"post_title\": \"\",\n  \"article_summary\": \"\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -416,
+        656
+      ],
+      "id": "7f15f52d-f6e7-4ce8-bc80-75c3c98135e3",
+      "name": "Article Summary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.com/2/tweets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <X_TOKEN>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $('Combine to Publish').item.json.post }}\",\n  \"media\": {\n    \"media_ids\": [\"{{ $json.data.id }}\"]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1840,
+        368
+      ],
+      "id": "d30f4022-a636-4792-bb07-558f3bee9938",
+      "name": "Post on X",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "BslFPpo50zV7p41x",
+          "name": "X nyxel OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "person": "raysW-ZoOO",
+        "text": "={{ $json.post }}",
+        "shareMediaCategory": "IMAGE",
+        "binaryPropertyName": "Generated_Image",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        608
+      ],
+      "id": "8bfdd9cf-7c03-4e0c-90e4-33823e46e2a1",
+      "name": "Post on LinkedIn",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "Ijf9pmdtNOMV9Ewf",
+          "name": "Dhyan Patel - dhyan.work"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Form Trigger\n\n- ## Collects user intent and input (niche or URL) with zero processing.\n\n- ## Routes execution path without transforming data.",
+        "height": 560,
+        "width": 432,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        112
+      ],
+      "id": "ba10a582-89e6-4821-9568-cfd784049412",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1uTjGC3Ek36u4cP8HY2uB7tPkfUBYoSr45spOFLRZ0Gw",
+          "mode": "list",
+          "cachedResultName": "Auto Publishing Social Media Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uTjGC3Ek36u4cP8HY2uB7tPkfUBYoSr45spOFLRZ0Gw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uTjGC3Ek36u4cP8HY2uB7tPkfUBYoSr45spOFLRZ0Gw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1872,
+        464
+      ],
+      "id": "1f4d1138-de98-4c92-ad61-3812447acd3a",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "h6c9Tf31h23hSzyz",
+          "name": "Sheets dhyan.work-n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=I am writing a social media post about: \n{{ $('Set Niche').item.json.niche }}\n\nHere is the research found via web search:\n{{ JSON.stringify($json.results, null, 1) }}\n\nTask: \n1. Analyze the research results above.\n2. Extract the most impactful fact, statistic, or news item related to the topic.\n3. Write a 2-sentence summary that I can use as the \"hook\" or \"value\" in a social media post.\n4. Return the output in a clean JSON format like this: \n\n{\n\"niche_summary\": \"your text here\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -448,
+        336
+      ],
+      "id": "5945483f-9c06-48be-981a-82888737ad19",
+      "name": "Summarize Niche Research Ideas"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 4,
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1360,
+        496
+      ],
+      "id": "31c43e85-cca7-4612-a218-512d710dbdde",
+      "name": "Combine to Publish"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract Gemini raw text\nconst text =\n  $json?.candidates?.[0]?.content?.parts?.[0]?.text;\n\nif (!text) {\n  throw new Error(\"Gemini response text not found\");\n}\n\n// 2. Extract the LAST JSON block from Gemini output\nconst jsonMatch = text.match(/\\{[\\s\\S]*\\}$/);\n\nif (!jsonMatch) {\n  throw new Error(\"No JSON block found in Gemini output\");\n}\n\n// 3. Parse JSON safely\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonMatch[0]);\n} catch (err) {\n  throw new Error(\"Failed to parse JSON from Gemini output\");\n}\n\nif (!parsed.ideas || typeof parsed.ideas !== \"object\") {\n  throw new Error(\"Parsed JSON does not contain 'ideas'\");\n}\n\n// 4. Build ONE consolidated Tavily search query\n// Strategy: extract keywords from each idea and merge them\nconst ideaTexts = Object.values(parsed.ideas);\n\nconst searchQuery =\n  ideaTexts\n    .map(text =>\n      text\n        .replace(/['\"]/g, \"\")\n        .split(\".\")[0]\n    )\n    .join(\", \") +\n  \" MLOps best practices tools examples\";\n\n// 5. Return EXACTLY ONE item\nreturn [\n  {\n    json: {\n      ideas: parsed.ideas,\n      search_query: searchQuery\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        336
+      ],
+      "id": "e6c64c07-2e1f-4521-87d6-fecb8c7792cf",
+      "name": "Structure Ideas"
+    },
+    {
+      "parameters": {
+        "query": "={{ $json.search_query }}",
+        "options": {
+          "max_results": 2
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        336
+      ],
+      "id": "a3931fa7-9be3-4f58-9034-aac2c3d3e550",
+      "name": "Search the Ideas",
+      "credentials": {
+        "tavilyApi": {
+          "id": "eyTi6XMuOCEc9o7d",
+          "name": "folile@9221 temp-mail Tavily"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a highly detailed, photorealistic image generation prompt. Based on the following social media summary: \n\n{{ $json.output.article_summary || $json.niche_summary[0]}}\n\nFocus on modern tech aesthetics, clean lighting, and 4k resolution. Output only the prompt text.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a professional Prompt writer, with an experience of 3+ years in the creating industry. \nYour core skill is the depth of how you specific the subject is impressive.\n\nYour task is to generate a powerful prompt for the user.\n\nStrict Response Instructions\n- You are bound to use the following structure for response.\n\n{\n  \"image_gen_prompt\" : \"prompt here\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        560,
+        320
+      ],
+      "id": "be45aaf9-0272-4fc6-8ef0-8d90bdfb15a7",
+      "name": "Gen Image Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.com/2/media/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "media_category",
+              "value": "tweet_image"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "media",
+              "inputDataFieldName": "Generated_Image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1632,
+        368
+      ],
+      "id": "45ab04c3-753a-44d6-ac36-88605d459778",
+      "name": "X - Image Upload",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "BslFPpo50zV7p41x",
+          "name": "X nyxel OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_CHARS = 3500; // safe for Gemini Flash, adjust if needed\n\nconst text = $json.clean_text;\n\nif (!text || typeof text !== \"string\") {\n  throw new Error(\"clean_text is missing or invalid\");\n}\n\n// Normalize whitespace\nconst normalized = text\n  .replace(/\\s+/g, \" \")\n  .trim();\n\n// Strategy:\n// 1. Take the first N characters (highest signal for summaries)\n// 2. Cut cleanly at sentence boundary\nlet sliced = normalized.slice(0, MAX_CHARS);\n\n// Avoid cutting mid-sentence\nconst lastPeriod = sliced.lastIndexOf(\".\");\nif (lastPeriod > 0) {\n  sliced = sliced.slice(0, lastPeriod + 1);\n}\n\nreturn [\n  {\n    json: {\n      sliced_text: sliced\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        656
+      ],
+      "id": "3b4e2bfb-a6bf-4766-8fe6-76c5cca8982f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dfe38b0e-d00b-4adc-a549-bdba5ddc37da",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        496
+      ],
+      "id": "ad390e54-0aba-4684-ab93-a060bf6b4d37",
+      "name": "Set (fields)"
+    },
+    {
+      "parameters": {
+        "content": "# Social Media Publishing Agent\n\n## What It Does\nAutomatically converts a niche idea or article URL into a complete social media post with copy, image, and live publishing.\n\n## How It Works\nTriggered from Google Sheets. Input is routed as either Niche or URL.  \nNiche: generates ideas → researches → extracts one strong insight.  \nURL: scrapes content → cleans text → summarizes key point.  \nThe insight is used to write a viral caption, generate an image, and publish to LinkedIn and X.\n\n## How To Use & Setup\n\n1) Connect Google Sheets Trigger  \nCreate a sheet with columns for Content Type (Niche or URL) and Idea. This is the only user input.\n\n2) Configure Credentials  \nSet API keys/tokens for:\n- Google Gemini (content + summarization)\n- Tavily (web research)\n- Firecrawl (URL scraping)\n- HuggingFace (image generation)\n- LinkedIn OAuth2 (posting)\n- X OAuth2 (media + tweet)\n\n3) Test Paths Separately  \nRun one execution with Niche and one with URL. Verify JSON outputs before enabling publishing.\n\n4) Go Live\nActivate workflow. Any new row triggers full automation and posts publicly.\n\n## Critical Note\nExpired or missing credentials will break execution mid-flow with no recovery.\n\n\n## Why?\nEliminates manual ideation, research, writing, design, and posting. Built for speed and consistency, not hand-holding.\n",
+        "height": 1168,
+        "width": 432,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2416,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "d8aa244b-90e4-4e15-bd6b-d6b2fe656d06",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Niche": {
+      "main": [
+        [
+          {
+            "node": "Generate Post Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Niche or URL?": {
+      "main": [
+        [
+          {
+            "node": "Set Niche",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Post Ideas": {
+      "main": [
+        [
+          {
+            "node": "Structure Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract URL": {
+      "main": [
+        [
+          {
+            "node": "Scrape Source URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Source URL": {
+      "main": [
+        [
+          {
+            "node": "Clean HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model v1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize Niche Research Ideas",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model v2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Article Summary",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model v3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gen Image Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser v1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Summarize Niche Research Ideas",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser v2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Article Summary",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser v3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Gen Image Prompt",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Generation": {
+      "main": [
+        [
+          {
+            "node": "Combine to Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Writer": {
+      "main": [
+        [
+          {
+            "node": "Keep Only Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Only Caption": {
+      "main": [
+        [
+          {
+            "node": "Combine to Publish",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Article Summary": {
+      "main": [
+        [
+          {
+            "node": "Combine to Publish",
+            "type": "main",
+            "index": 2
+          },
+          {
+            "node": "Set (fields)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Niche or URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Niche Research Ideas": {
+      "main": [
+        [
+          {
+            "node": "Combine to Publish",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Set (fields)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine to Publish": {
+      "main": [
+        [
+          {
+            "node": "Post on LinkedIn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "X - Image Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Ideas": {
+      "main": [
+        [
+          {
+            "node": "Search the Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search the Ideas": {
+      "main": [
+        [
+          {
+            "node": "Summarize Niche Research Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gen Image Prompt": {
+      "main": [
+        [
+          {
+            "node": "Image Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "X - Image Upload": {
+      "main": [
+        [
+          {
+            "node": "Post on X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Article Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set (fields)": {
+      "main": [
+        [
+          {
+            "node": "Gen Image Prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Content Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c41116c1-9aef-432e-b405-133333b431b2",
+  "meta": {
+    "instanceId": "b5ce0487ff22495b0ec8ec7fcd455cb1e7a71ee741d4c100ace6f1c74d140697"
+  },
+  "id": "09OcjddNAEaOD7Iu",
+  "tags": []
+}
