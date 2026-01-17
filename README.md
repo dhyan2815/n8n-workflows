@@ -18,9 +18,10 @@ The goal of this repository is simple:
 | Spreadsheet Ops | Google Sheets |
 | Messaging | Telegram + n8n Chat |
 | Logic | JavaScript (n8n Code nodes) |
-| AI Framework | LangChain |
+| AI Agent | LangChain |
 | Research Ideas | Tavily |
 | Web Scraping | Firecrawl |
+| Notion Database | Content Reader |
 
 ---
 
@@ -49,6 +50,8 @@ Before using any workflow, ensure you have:
 - Tavily Access Token (for research ideas)
 - X Access Token (for creating media posts on X)
 - LinkedIn OAuth2 (for creating posts on LinkedIn)
+- Notion Integration Internal Secret (for Notion database and page content access)
+- Telegram Access Token (for telegram-facing operations)
 
 Each workflow's README contains step-by-step setup instructions.
 
@@ -56,13 +59,13 @@ Each workflow's README contains step-by-step setup instructions.
 
 ## 📋 Workflow Orchestrated
 
-| Feature | Daily Briefing | RAG Chatbot | Talk with Sheets | Chat with Sheets (Telegram) | Chat with Doc on Slack | Social Media Publishing Agent |
-|---------|---------------|-------------|------------------|----------------------------|-------|------|
-| **Interface** | Email | n8n Chat | Telegram/n8n Chat | Telegram Only | Slack | n8n |
-| **Data Source** | NewsAPI | Google Drive | Google Sheets | Google Sheets | File | Sheets |
-| **LLM** | Gemini | Gemini | Gemini | Gemini | Gemini | Gemini |
-| **Read/Write** | Read Only | Read Only | Read Only | Read Only | Read Only | Read-Write |
-| **Automation** | Scheduled | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand |
+| Feature | Daily Briefing | RAG Chatbot | Talk with Sheets | Chat with Sheets (Telegram) | Chat with Doc on Slack | Social Media Publishing Agent | Job Application Tracker Agent |
+|---------|---------------|-------------|------------------|----------------------------|-------|------|----------|
+| **Interface** | Email | n8n Chat | Telegram/n8n Chat | Telegram Only | Slack | n8n | Telegram |
+| **Data Source** | NewsAPI | Google Drive | Google Sheets | Google Sheets | File | Sheets | Notion |
+| **LLM** | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash/Mimo-v2-flash |
+| **Read/Write** | Read Only | Read Only | Read Only | Read Only | Read Only | Read-Write | Read-Write |
+| **Automation** | Scheduled | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand |
 
 ---
 

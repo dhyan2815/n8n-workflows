@@ -1,0 +1,451 @@
+{
+  "name": "Job Application Tracker Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        560
+      ],
+      "id": "c759c714-a8bc-4c49-98d8-f820dc8a1c98",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        256
+      ],
+      "id": "929cc7ef-aad3-4636-98ee-40c2ebd65f51",
+      "name": "Telegram Trigger",
+      "webhookId": "2c12556e-92c3-411c-9c63-048bee3f500b",
+      "credentials": {
+        "telegramApi": {
+          "id": "7ziSpcwhb9XnUTJV",
+          "name": "Job App Assistant Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        256
+      ],
+      "id": "917fa7c4-32a4-472c-a0c9-b3ff886e5fcc",
+      "name": "Send a text message",
+      "webhookId": "313b86ee-a225-4e5c-8afe-ef1064ee4399",
+      "credentials": {
+        "telegramApi": {
+          "id": "7ziSpcwhb9XnUTJV",
+          "name": "Job App Assistant Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ensure input exists\nlet text = String($json.output || \"I'm sorry, I couldn't process that request.\");\n\n// 1. Check for raw Tool/JSON dumps (Safety Fallback)\nif (text.includes('{\"') || text.includes('Used tools:')) {\n  return [{ json: { output: \"<b>Search result too large.</b> Please be more specific with the company name.\" } }];\n}\n\n// 2. Escape HTML special characters (to prevent Telegram 400 errors)\ntext = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\n// 3. Re-convert specific Markdown back to Telegram-safe HTML\ntext = text\n  .replace(/&lt;b&gt;(.*?)&lt;\\/b&gt;/g, '<b>$1</b>') // Handle pre-existing bold\n  .replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>')           // **Bold** -> <b>\n  .replace(/^\\d+\\.\\s+/gm, '• ')                     // Numbered lists -> Bullets\n  .replace(/^-+\\s+/gm, '• ')                        // Dash lists -> Bullets\n  .replace(/^#+\\s*/gm, '');                         // Remove headers\n\nreturn [{ json: { output: text.trim() } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        256
+      ],
+      "id": "421e96e1-edff-4c9d-b385-bb85d3363f62",
+      "name": "Render in HTML",
+      "notes": "- Error Handling\n- Normalization of the output happens in this node."
+    },
+    {
+      "parameters": {
+        "content": "# AI Job Application Assistant\n\n**Objective** \n- An automated Telegram bot that queries and retrieves job application data from a Notion database using an AI Agent.\n---\n\n**Trigger**\n- Activated when a user sends a message to the Telegram bot.\n---\n\n**AI Engine**\n- Uses mimo-v2-flash via OpenRouter to process natural language queries.\n---\n\n**Data Source**\n- Connected to the \"Job Applications Tracker\" database in Notion.\n---",
+        "height": 512,
+        "width": 384
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        1904
+      ],
+      "id": "233cb1a1-24d2-4806-a072-537288ba05e7",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Input & Intelligence\n\n**Telegram Trigger** \n- Captures user chat ID and query text.\n---\n\n**AI Agent**\n- Acts as the brain; it uses Simple Memory to remember conversation history and uses the Notion Tool to fetch data when asked about job status.",
+        "height": 256,
+        "width": 416,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        496,
+        16
+      ],
+      "id": "a2ff5709-488e-4079-a47f-44106258c4b5",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Output Formatting\n\n**Render in HTML** \n- A JavaScript code block that converts the AI's raw output (Markdown/Plain text) into Telegram-compatible HTML tags like <b> and •.\n---\n\n**Send Message** \n- Delivers the formatted answer back to the user via the original Telegram chat.",
+        "height": 272,
+        "width": 416,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        0
+      ],
+      "id": "061a1aca-e424-47e2-92c8-dc795a274840",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User message:\n{{ $json.message.text }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=You are a job application assistant.\n\nYou can use these tools:\n- Notion Database: find job applications by company name.\n- Page Content Reader: read notes from a single Notion page.\n- Web Search: get external company information.\n\nRules:\n1. If the user mentions a company or job status, use Notion Database first.\n2. Use Page Content Reader only if there is exactly one Notion result.\n3. Use Web Search only if the information is not in Notion.\n4. Never invent companies, application statuses, or notes.\n5. If the request is unclear or results are ambiguous, ask the user to clarify.\n\nKeep responses short under 4050 characters ONLY.\nUse bullet points only.\nIf you cannot answer using the tools, say so clearly.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        768,
+        256
+      ],
+      "id": "67a536d6-48d5-48d4-8e76-1d0c796c90f4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "2b5097dd-d30d-8127-8690-c105608a0329",
+          "mode": "list",
+          "cachedResultName": "Job Applications Tracker",
+          "cachedResultUrl": "https://www.notion.so/2b5097ddd30d81278690c105608a0329"
+        },
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "key": "Company|title",
+                "direction": "descending"
+              },
+              {
+                "key": "Position|rich_text",
+                "direction": "descending"
+              },
+              {
+                "key": "Status|multi_select",
+                "direction": "descending"
+              },
+              {
+                "key": "Application Date|date",
+                "direction": "descending"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1424,
+        544
+      ],
+      "id": "ab1a5efe-9222-4aaf-8de6-52ff641e6f9b",
+      "name": "Notion Database",
+      "credentials": {
+        "notionApi": {
+          "id": "vkbVPiMhlGcw21Ns",
+          "name": "dhyan.work"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "=Use this tool to retrieve the text content from inside a specific Notion page using a 'pageId'. This tool returns a list of blocks; look specifically for the 'content' field in each item to find the actual notes or job description text",
+        "resource": "block",
+        "operation": "getAll",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Block', `Only search the 'content' for the Page Content Reader`, 'string') }}",
+          "mode": "id"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', `Only return those items which contains 'content' as a key in JSON`, 'boolean') }}",
+        "fetchNestedBlocks": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Also_Fetch_Nested_Blocks', ``, 'boolean') }}",
+        "simplifyOutput": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify_Output', ``, 'boolean') }}"
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        528
+      ],
+      "id": "e6e08205-fece-43c2-b7e4-e3bd13219fbf",
+      "name": "Page Content Reader",
+      "credentials": {
+        "notionApi": {
+          "id": "vkbVPiMhlGcw21Ns",
+          "name": "dhyan.work"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        544
+      ],
+      "id": "322643bc-8221-4eb1-a36b-c1074b4bed03",
+      "name": "Web Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "gPRiLcpRMUhpiOdq",
+          "name": "Tavily dhyan2192004"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "xiaomi/mimo-v2-flash:free",
+          "mode": "list",
+          "cachedResultName": "xiaomi/mimo-v2-flash:free"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        560
+      ],
+      "id": "b2a19e6d-879f-494e-ac80-5d28accc40e2",
+      "name": "Mimo v2 flash",
+      "credentials": {
+        "openAiApi": {
+          "id": "ctcWWaJT1DiNH05q",
+          "name": "openrouter:free"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        464,
+        560
+      ],
+      "id": "7a3b163b-76c5-4120-86e6-8624698b9ef0",
+      "name": "2.5 Flash",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "eYDrrlbjX6l3QdpM",
+          "name": "Workflow B dhyan.work"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n## Helper Tools\n\n### 2.5 Flash (Model)\n- Fast AI model used to understand the user’s message and generate a clear reply.\n\n### Mimo v2 flash (Model)\n- Backup AI model used when needed to keep responses stable and reliable.\n\n### Simple Memory (Memory)\n- Stores recent chat context so the agent can remember what the user said earlier.",
+        "height": 448,
+        "width": 592,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        368,
+        544
+      ],
+      "id": "425329d5-41cf-4f24-898c-43899f892700",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# 🗒️ Documentation —  Job Application Tracker Assistant\n\n## ✅ What this workflow is\n- This workflow is an automated **Telegram bot** that lets a user ask questions about their **job applications**, and it replies with the latest data pulled from a **Notion Job Applications database** using an **AI Agent**.\n\n---\n\n## 🎯 Why this workflow is useful\n- Saves time by removing manual checking inside Notion  \n- Gives instant updates directly inside Telegram  \n- Keeps job tracking simple and organized  \n- Makes job status queries fast, consistent, and easy to read  \n\n---\n\n## ⚙️ How this workflow works (step-by-step)\n\n### 1) Telegram Trigger\n- Starts the workflow when the user sends a message to the bot  \n- Example: “What’s the status of my Google application?”\n\n### 2) AI Agent\n- Understands the user’s question  \n- Decides which tool to use (Notion, memory, web search)  \n- Builds the final response in a clean format  \n\n**Connected tools inside the AI Agent:**\n- **Simple Memory** → remembers recent conversation context  \n- **Notion Database** → fetches job application records  \n- **Page Content Reader** → reads extra details from Notion pages  \n- **Web Search** → gets online info when needed  \n- **Model (2.5 Flash / Mimo v2 flash)** → generates the response text  \n\n### 3) Render in HTML\n- Formats the answer neatly  \n- Makes the reply easier to read inside Telegram  \n\n### 4) Send a Text Message\n- Sends the final response back to the user in the same Telegram chat  \n\n---\n\n## 📌 When to use this workflow\nUse this workflow when:\n- You track job applications inside Notion  \n- You want quick updates without opening Notion  \n- You want a chat-based system to manage job status  \n- You want a lightweight personal assistant for job tracking  \n\n---\n\n## 🔍 Example user questions\n- “Show all applications in Interview stage”\n- “What’s my latest application update?”\n- “Which companies haven’t replied yet?”\n- “List applications submitted this week”\n\n---\n\n## 🧠 Output style (what the user receives)\nThe user gets a clean reply like:\n- Company name  \n- Role  \n- Status  \n- Last updated date  \n- Notes / next steps (if available)\n\n---\n",
+        "height": 1696,
+        "width": 544
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -496
+      ],
+      "id": "6588790b-1c65-4605-80c0-3b9794fc1245",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n## Retrieving Tools\n\n### Page Content Reader (Notion Tool)\n- Reads text from a Notion page so the agent can pull details from saved notes.\n\n### Web Search (Search Tool)\n- Searches the internet to find quick and useful information when required.\n\n### Notion Database (Database Tool)\n- Fetches records from the Notion database (like job applications) to answer status questions.",
+        "height": 480,
+        "width": 592,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        992,
+        512
+      ],
+      "id": "7b845ee9-9f62-4477-b61c-32e1c8bde526",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render in HTML": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Render in HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion Database": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page Content Reader": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2.5 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mimo v2 flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "f4f62f1b-483e-4c19-86e2-b568440e5cf1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "44fa105a2b149efa60ea4f37728fc7e3defd85d53bf242d5128541d1c0530269"
+  },
+  "id": "KmBUUtlhaPZKLS8uJxtOI",
+  "tags": []
+}
