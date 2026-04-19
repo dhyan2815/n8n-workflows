@@ -59,13 +59,13 @@ Each workflow's README contains step-by-step setup instructions.
 
 ## 📋 Workflow Orchestrated
 
-| Feature | Daily Briefing | RAG Chatbot | Talk with Sheets | Chat with Sheets (Telegram) | Chat with Doc on Slack | Social Media Publishing Agent | Job Application Tracker Agent |
-|---------|---------------|-------------|------------------|----------------------------|-------|------|----------|
-| **Interface** | Email | n8n Chat | Telegram/n8n Chat | Telegram Only | Slack | n8n | Telegram |
-| **Data Source** | NewsAPI | Google Drive | Google Sheets | Google Sheets | File | Sheets | Notion |
-| **LLM** | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash/Mimo-v2-flash |
-| **Read/Write** | Read Only | Read Only | Read Only | Read Only | Read Only | Read-Write | Read-Write |
-| **Automation** | Scheduled | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand |
+| Feature | Daily Briefing | RAG Chatbot | Talk with Sheets | Chat with Sheets (Telegram) | Chat with Doc on Slack | Social Media Publishing Agent | Job Application Tracker Agent | RAG Doc Chatbot v2 |
+|---------|---------------|-------------|------------------|----------------------------|-------|------|----------|-------------------|
+| **Interface** | Email | n8n Chat | Telegram/n8n Chat | Telegram Only | Slack | n8n | Telegram | Telegram |
+| **Data Source** | NewsAPI | Google Drive | Google Sheets | Google Sheets | File | Sheets | Notion | Google Drive |
+| **LLM** | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash | G-2.5 Flash/Mimo-v2-flash | G-2.5 Pro |
+| **Read/Write** | Read Only | Read Only | Read Only | Read Only | Read Only | Read-Write | Read-Write | Read Only |
+| **Automation** | Scheduled | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand | On-Demand | Scheduled + On-Demand |
 
 ---
 
