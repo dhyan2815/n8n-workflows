@@ -1,0 +1,1062 @@
+{
+  "name": "AI Powered RAG-Based Automated Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "options": {}
+      },
+      "id": "835f7e52-2d44-467e-bea0-66d08a12b039",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        352,
+        992
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "id": "d9e36bed-6f27-41b6-8013-355e05ec651e",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        432,
+        1120
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Phase B -> Chat + Retrieval Pipeline \n\n## (Telegram → Agent → Pinecone/Web → Telegram)\n\n## Trigger\n- **Telegram Trigger** (On Message Sent)\n\n## Steps\n\n### Main Agent (Gemini 2.5 Pro)\n- Acts as a company HR assistant\n- Follows strict tool policy\n- Memory (context window = 10)\n- Maintains chat continuity per user\n\n### Tools\n1. **Pinecone Vector Store (retrieval)**\n   - Tool name: `documents_tool`\n   - Searches rag-documents\n   - Top K = 5\n2. **Tavily Web Search**\n   - Used ONLY if documents don’t contain the answer\n   - Tool Policy inside Agent:\n     - ALWAYS search documents first\n     - If found → answer only from docs\n     - If not → search web with sources\n     - Never invent company policy\n\n### Additional Processes\n- **Sanitize Telegram Text** (Code Node):\n  - Removes markdown/bullets/escape chars\n  - Makes response Telegram-clean\n- **Send Telegram Message:**\n  - Sends final response to user.\n\n## ✅ Result:\nA grounded RAG chatbot that answers from company docs, with safe web fallback.",
+        "height": 992,
+        "width": 1168,
+        "color": 7
+      },
+      "id": "f1fb6a89-97bb-4fdb-ab92-1d9e557405b2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1072,
+        -32
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        208
+      ],
+      "id": "784773d4-ab47-4cd6-b18e-2460b1f6dccf",
+      "name": "Trigger On Message Sent",
+      "webhookId": "f96bb75c-c5b5-4b97-aa11-fe2515855821",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fml4p9jKiVVPIW4I",
+          "name": "Bot: RAG Chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Phase A -> Smart Document Indexing Pipeline \n\n## (Drive → Sheets → Pinecone with Versioning)\n\n## Trigger\n\n- Cron (every 2 mins)\n- Polls a specific Google Drive folder continuously\n\n## Steps\n\n1. **Search File in Folder (Google Drive)**\n   - Fetches all files from the target folder with metadata\n\n2. **Loop Over Items**\n   - Processes files one by one\n\n3. **Set (Drive Fields)**\n   - Extracts:\n     - `driveFileId`\n     - `driveFileName`\n     - `driveModified`\n\n4. **Get row(s) in sheet (Google Sheets)**\n   - Checks if this file was indexed before\n   \n   **IF:** `FileId` Empty OR `File Modified`\n   \n   **Logic:**\n   - New file → index\n   - Same file unchanged → skip\n   - Same file modified → re-index\n\n5. **Download file (Google Drive)**\n   - Downloads binary document\n\n6. **Recursive Character Text Splitter**\n   - Chunk overlap: 100\n\n7. **Default Data Loader**\n   - Loads binary into document format\n\n8. **Embeddings Google Gemini (`text-embedding-004`)**\n   - Converts chunks to vectors\n\n9. **Pinecone Vector Store (Inserting)**\n   - Upserts vectors into index: `rag-documents`\n  \n10. **Aggregate**\n    - Waits for all chunks to finish\n    \n11. **Append or Update row in sheet**\n    - Stores:\n      | Field | Description |\n      |---------|--------------|\n      | `fileId` | ID of the file |\n      | `fileName` | Name of the file |\n      | `modifiedTime` | Last modified time |\n      | `indexedAt` | Time of indexing |\n  \ndrive becomes a self-healing vector database with version tracking.",
+        "height": 1408,
+        "width": 1328,
+        "color": 7
+      },
+      "id": "01008869-c6d3-4f6b-83b2-4e30dc7f50a4",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -32
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Search the web for reliable sources to answer out-of-context questions.",
+        "query": "={{ $('Trigger On Message Sent').item.json.message.text }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        672
+      ],
+      "id": "b8de25e5-b284-48eb-8fa9-11d7a89d839d",
+      "name": "Web Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "hg1OCgyXye2NIKDo",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Question: {{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=You are an HR assistant for this company.\n\nYou have access to two tools:\n\nTOOL 1 - documents_tool (Pinecone):\nThis tool contains the complete company knowledge base with ALL official policies.\nThis includes termination policy, leave policy, attendance, benefits, conduct rules,\nand every other HR document. You MUST call this tool for every single question\nbefore doing anything else. Even if you think you know the answer, call it anyway.\n\nTOOL 2 - web_search_tool:\nOnly use this tool if documents_tool returns absolutely no relevant content.\n\nYOUR BEHAVIOR RULES:\n\nSTEP 1 - For every user question, call documents_tool immediately. No exceptions.\n\nSTEP 2 - If documents_tool returns relevant content:\nUse that content to answer. Do not call web_search_tool. \nDo not say \"I cannot find information about this.\" \nIf Pinecone returns chunks of text, extract the answer from those chunks.\n\nSTEP 3 - If documents_tool returns nothing useful after you searched:\nThen call web_search_tool.\nMention 1-2 sources at the end.\nTell the user this answer is from general sources, not official company policy.\n\nSTEP 4 - Never say \"I don't have information\" without first calling documents_tool.\nNever invent policy details that were not in the documents.\nIf a policy topic is confirmed missing from documents, tell the user to contact HR directly.\n\nFORMATTING RULES:\nWrite in plain text only.\nNo markdown, no bullet symbols, no asterisks, no numbering.\nShort paragraphs with a blank line between them.\nKeep responses concise and Telegram-friendly."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1648,
+        208
+      ],
+      "id": "e2476136-f4d6-492f-ac95-4fc6c49e15e8",
+      "name": "Main Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = $json.output || \"\";\n\n// Remove markdown-style bullets at line start\ntext = text.replace(/^\\s*[*•-]\\s+/gm, \"\");\n\n// Remove leftover escape slashes like \"\\.\"\ntext = text.replace(/\\\\([_.!*[\\]()~`>#+\\-=|{}])/g, \"$1\");\n\n// Trim extra whitespace\ntext = text.replace(/\\n{3,}/g, \"\\n\\n\").trim();\n\nreturn [{ output: text }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        208
+      ],
+      "id": "b1cd7974-93aa-4151-860c-efaf039f670b",
+      "name": "Sanitize Telegram Text"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "id": "45b1dc3f-bc94-4431-a457-6772e86e10ec",
+      "name": "2.5-pro v1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1136,
+        832
+      ],
+      "typeVersion": 1,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "he5jpSDoWjEXVYbY",
+          "name": "workflow B 1st"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1808,
+        720
+      ],
+      "id": "a054185c-cf75-4a49-814d-27ec82544f47",
+      "name": "text-embedding-004",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "he5jpSDoWjEXVYbY",
+          "name": "workflow B 1st"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1puIOSb6sVEOj3ZgBvHEQx3yfElI1TE7F",
+            "mode": "list",
+            "cachedResultName": "AI-Powered RAG-Based Document Assistant With Automated Knowledge Base Synchronization",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1puIOSb6sVEOj3ZgBvHEQx3yfElI1TE7F"
+          }
+        },
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "id": "dd4934a6-5181-45ba-8a87-0c2ee81691cd",
+      "name": "Search File in Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        400,
+        240
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "t8oFKkHBvNAZEQ97",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Set (Drive Fields)').item.json.driveFileId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        496
+      ],
+      "id": "0a244aa6-b676-4b88-8258-051618c5fbfc",
+      "name": "Download file",
+      "notesInFlow": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "t8oFKkHBvNAZEQ97",
+          "name": "Google Drive"
+        }
+      },
+      "notes": "based on fileId"
+    },
+    {
+      "parameters": {
+        "content": "## File Handling Logic\n\n### New file → index\n\n### Same file unchanged → skip\n\n### Same file modified → re-index",
+        "height": 224,
+        "width": 272,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        784,
+        -32
+      ],
+      "id": "23fed04d-a4e7-45ed-a64b-32e0e6be135e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        640,
+        240
+      ],
+      "id": "a6e622ed-944c-4da8-a251-f81576afc1ae",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "668b4c46-c1aa-4fe3-a72d-507a62d84120",
+              "name": "driveFileId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "03aa1565-6f8a-4b80-8198-352dc27bd0ed",
+              "name": "driveModified",
+              "value": "={{ $json.modifiedTime }}",
+              "type": "string"
+            },
+            {
+              "id": "60a3ae58-9179-4215-ac8d-d76ded4e1ddb",
+              "name": "driveFileName",
+              "value": "={{ $json.originalFilename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        256
+      ],
+      "id": "4dd48b05-630d-44c5-84ae-60b9e68fa4a6",
+      "name": "Set (Drive Fields)",
+      "notesInFlow": true,
+      "notes": "fileName, fileId, modifiedTime\n"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "id": "0a1b5bdb-986e-445c-8767-312f04735d94",
+      "name": "Memory ",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        1472,
+        656
+      ],
+      "typeVersion": 1.3,
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6ec2992c-0d5c-46e2-acdd-3beebcc161e1",
+              "leftValue": "={{ $json.fileId }}",
+              "rightValue": "=0",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "72911746-e6f2-4360-9ce2-64a267fdf8a7",
+              "leftValue": "={{ Date.parse($json.driveModified) }}",
+              "rightValue": "={{ Date.parse($json.modifiedTime) }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        512
+      ],
+      "id": "d90e1f37-06df-4e0c-a991-12e3c999c086",
+      "name": "File_Id Empty?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Trigger On Message Sent').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2032,
+        464
+      ],
+      "id": "e4c5cf43-78ad-4486-80f2-c1e8eb3625e4",
+      "name": "Send MSG back to TG",
+      "webhookId": "67c4bb3d-9459-4d6c-b772-89536b431bf6",
+      "credentials": {
+        "telegramApi": {
+          "id": "Fml4p9jKiVVPIW4I",
+          "name": "Bot: RAG Chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        240
+      ],
+      "id": "276908a4-7a7c-4364-9f38-233ab5942dba",
+      "name": "Cron 5mins"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1yo0j3zJiaLnC-0RF_XCTXJ9V9P66kO_M6W9UtNxAarE",
+          "mode": "list",
+          "cachedResultName": "RAG based Doc Assistant: File Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yo0j3zJiaLnC-0RF_XCTXJ9V9P66kO_M6W9UtNxAarE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "indexed_files",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yo0j3zJiaLnC-0RF_XCTXJ9V9P66kO_M6W9UtNxAarE/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "fileId",
+              "lookupValue": "={{ $json.driveFileId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        400,
+        512
+      ],
+      "id": "60dabf87-e04a-4b9f-85f5-fffd1b66cdeb",
+      "name": "Check File Indexed Before?",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "notesInFlow": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4jpFBgcUdJDmvsQu",
+          "name": "Google Sheets"
+        }
+      },
+      "notes": "Based on file_id"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "0d1461d7-2a55-4039-9c8f-604d7e0f052b",
+      "name": "text-embedding-001 ",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "position": [
+        176,
+        1056
+      ],
+      "typeVersion": 1,
+      "notesInFlow": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "he5jpSDoWjEXVYbY",
+          "name": "workflow B 1st"
+        }
+      },
+      "notes": "3072 dimensions"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "rag-based-doc-assistant-with-knowledge-base",
+          "mode": "list",
+          "cachedResultName": "rag-based-doc-assistant-with-knowledge-base"
+        },
+        "options": {
+          "pineconeNamespace": "={{ $('Set (Drive Fields)').item.json.driveFileName }}"
+        }
+      },
+      "id": "4f52dd99-25fa-4bb6-a304-c10f2c23b35a",
+      "name": "Vector Embeddings Generation",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        272,
+        784
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "pineconeApi": {
+          "id": "4bAXdVm1bgA3dUKd",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1yo0j3zJiaLnC-0RF_XCTXJ9V9P66kO_M6W9UtNxAarE",
+          "mode": "list",
+          "cachedResultName": "RAG based Doc Assistant: File Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yo0j3zJiaLnC-0RF_XCTXJ9V9P66kO_M6W9UtNxAarE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "indexed_files",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yo0j3zJiaLnC-0RF_XCTXJ9V9P66kO_M6W9UtNxAarE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fileId": "={{ $('Set (Drive Fields)').item.json.driveFileId }}",
+            "fileName": "={{ $('Set (Drive Fields)').item.json.driveFileName }}",
+            "modifiedTime": "={{ DateTime.fromISO($('Set (Drive Fields)').item.json.driveModified).toFormat('dd LLL yyyy, hh:mm a') }}",
+            "indexedAt": "={{ DateTime.now().setZone('Asia/Kolkata').toFormat('dd LLL yyyy, hh:mm a') }}"
+          },
+          "matchingColumns": [
+            "fileId"
+          ],
+          "schema": [
+            {
+              "id": "fileId",
+              "displayName": "fileId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fileName",
+              "displayName": "fileName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "modifiedTime",
+              "displayName": "modifiedTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "indexedAt",
+              "displayName": "indexedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        784
+      ],
+      "id": "a204304e-c3e0-423a-9271-63f7019c901f",
+      "name": "Update record in Sheets",
+      "notesInFlow": true,
+      "notes": "indexed_file with timestamp"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        624,
+        784
+      ],
+      "id": "830b61fd-80b6-4f0f-ad3a-14b7f9b25296",
+      "name": "Aggregate Chunks"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1488,
+        400
+      ],
+      "id": "309ea70e-f4dd-40d0-8c36-50f33fc000d8",
+      "name": "4o-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "Y9tLXUQMLFHdUeOp",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "rag-based-doc-assistant-with-knowledge-base",
+          "mode": "list",
+          "cachedResultName": "rag-based-doc-assistant-with-knowledge-base"
+        },
+        "options": {}
+      },
+      "id": "86cd486a-8fa8-4320-ae8a-368a7fde644f",
+      "name": "Pinecone Vector Store (Inserting)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        2928,
+        2144
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "pineconeApi": {
+          "id": "4bAXdVm1bgA3dUKd",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Upload Docs",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload your document",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        2640,
+        2144
+      ],
+      "id": "10b8f68f-a1fa-424f-b677-c097af5cd048",
+      "name": "On form submission",
+      "webhookId": "6b0fffe8-7e5b-49d7-a544-f9b52bc5e80d"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "506fe413-2a79-448a-821e-ebdb4def5e92",
+      "name": "Embeddings Google Gemini 001 (Inserting)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "position": [
+        2768,
+        2336
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "he5jpSDoWjEXVYbY",
+          "name": "workflow B 1st"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "loader": "pdfLoader",
+        "binaryDataKey": "Upload_your_document",
+        "options": {}
+      },
+      "id": "67750d22-a1d2-4ce9-8a67-23b4a6a48e19",
+      "name": "Default Data Loader1",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        3040,
+        2288
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "id": "2b51b477-6bb0-405d-acfb-bbf78eaddd12",
+      "name": "Recursive Character Text Splitter1",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        3232,
+        2464
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Use this tool FIRST before anything else, for EVERY question the user asks. \nThis tool searches the internal company knowledge base which contains ALL company \npolicies including HR policies, termination policies, leave policies, attendance \nrules, employee benefits, code of conduct, and all other official company documents. \nWhen the user asks about ANY company policy, rules, procedures, or HR topics — \ncall this tool immediately. Do not assume information is missing without calling \nthis tool first.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "rag-based-doc-assistant-with-knowledge-base",
+          "mode": "list",
+          "cachedResultName": "rag-based-doc-assistant-with-knowledge-base"
+        },
+        "topK": 8,
+        "includeDocumentMetadata": false,
+        "options": {
+          "pineconeNamespace": ""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1744,
+        544
+      ],
+      "id": "0d804eb8-ad41-4009-90b5-4800e49f267d",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "4bAXdVm1bgA3dUKd",
+          "name": "Pinecone account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Vector Embeddings Generation",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger On Message Sent": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Agent": {
+      "main": [
+        [
+          {
+            "node": "Sanitize Telegram Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize Telegram Text": {
+      "main": [
+        [
+          {
+            "node": "Send MSG back to TG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2.5-pro v1": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "text-embedding-004": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search File in Folder": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Vector Embeddings Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Set (Drive Fields)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set (Drive Fields)": {
+      "main": [
+        [
+          {
+            "node": "Check File Indexed Before?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory ": {
+      "ai_memory": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File_Id Empty?": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron 5mins": {
+      "main": [
+        [
+          {
+            "node": "Search File in Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check File Indexed Before?": {
+      "main": [
+        [
+          {
+            "node": "File_Id Empty?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "text-embedding-001 ": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Vector Embeddings Generation",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Embeddings Generation": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record in Sheets": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Chunks": {
+      "main": [
+        [
+          {
+            "node": "Update record in Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store (Inserting)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini 001 (Inserting)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store (Inserting)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store (Inserting)",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "03e00f05-1ab7-49ca-91ca-7ec016b10507",
+  "meta": {
+    "instanceId": "2eddd17e1642ff43be3357ec42bfdaee641398550e542fa1b18392327c0ea8d8"
+  },
+  "id": "aLNRf8BzSUPEW6E7",
+  "tags": []
+}
